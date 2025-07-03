@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/thomhuang/local-leetcode/src"
-	"github.com/thomhuang/local-leetcode/util"
 	"os"
 	"strconv"
+
+	"github.com/thomhuang/local-leetcode/src"
+	"github.com/thomhuang/local-leetcode/util"
 )
 
 var server *src.HttpServer
@@ -71,19 +72,19 @@ func getQuestions() map[int]string {
 	return src.ToQuestionMap(questions)
 }
 
-func getQuestion(slug string) src.QuestionResponse {
+func getQuestion(slug string) src.Question {
 	questionStream, err := server.GetQuestion(slug)
 	if err != nil {
 		server.Log.Append(fmt.Sprintf("failed to fetch problem info from leetcode. Problem: %s. %s", slug, err.Error()))
-		return src.QuestionResponse{}
+		return src.Question{}
 	}
 
 	var question src.QuestionResponse
 	err = json.Unmarshal(questionStream, &question)
 	if err != nil {
 		server.Log.Append(fmt.Sprintf("could not unmarshal problems metadata response body: %s\n", err.Error()))
-		return src.QuestionResponse{}
+		return src.Question{}
 	}
 
-	return question
+	return src.ToQuestion(question)
 }
