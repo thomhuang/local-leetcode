@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"github.com/thomhuang/local-leetcode/internal"
-	"github.com/thomhuang/local-leetcode/util"
 	"os"
+
+	u "github.com/thomhuang/local-leetcode/internal/user"
+	"github.com/thomhuang/local-leetcode/util"
 )
 
 type HttpServer struct {
 	Log       *util.Log
-	UserAuth  internal.UserAuthInfo
+	UserAuth  u.UserAuthInfo
 	Questions map[int]string
 }
 
@@ -24,7 +24,8 @@ func main() {
 
 	err := server.ImportAuthentication()
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("Unable to import existing authentication! %s", err.Error()))
+		server.Log.Append("Unable to import existing authentication! " + err.Error())
 	}
+
 	server.Prompt()
 }

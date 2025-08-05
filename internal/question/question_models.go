@@ -1,6 +1,4 @@
-package internal
-
-import "time"
+package question
 
 type AllQuestionsResponse struct {
 	Response []QuestionsMetadataModel `json:"stat_status_pairs"`
@@ -40,29 +38,12 @@ type CodeSnippet struct {
 }
 
 type Question struct {
-	QuestionId  string
-	Title       string
-	TitleSlug   string
-	Content     string
-	Difficulty  string
-	Language    string
-	CodeSnippet string
-}
-
-type UserAuthInfo struct {
-	AuthCookies string
-	LastUpdated time.Time
-}
-
-type UserStatusResponse struct {
-	Data UserStatusModel `json:"data"`
-}
-
-type UserStatusModel struct {
-	UserStatus UserModel `json:"userStatus"`
-}
-
-type UserModel struct {
-	FullName string `json:"realName"`
-	Username string `json:"username"`
+	QuestionId       string
+	Title            string
+	TitleSlug        string
+	Content          string
+	Difficulty       string
+	Language         string
+	CodeSnippet      string
+	ExampleTestCases string
 }

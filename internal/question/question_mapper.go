@@ -1,4 +1,4 @@
-package internal
+package question
 
 import (
 	"fmt"
@@ -34,12 +34,13 @@ func ToQuestion(response QuestionResponse) Question {
 	}
 
 	return Question{
-		QuestionId:  response.Data.QuestionInfo.QuestionId,
-		Title:       response.Data.QuestionInfo.Title,
-		TitleSlug:   response.Data.QuestionInfo.TitleSlug,
-		Content:     markdown,
-		Difficulty:  response.Data.QuestionInfo.Difficulty,
-		Language:    "Go",
-		CodeSnippet: goCodeSnippet,
+		QuestionId:       response.Data.QuestionInfo.QuestionId,
+		Title:            response.Data.QuestionInfo.Title,
+		TitleSlug:        response.Data.QuestionInfo.TitleSlug,
+		Content:          markdown,
+		Difficulty:       response.Data.QuestionInfo.Difficulty,
+		Language:         "Go",
+		CodeSnippet:      goCodeSnippet,
+		ExampleTestCases: response.Data.QuestionInfo.ExampleTestCases,
 	}
 }

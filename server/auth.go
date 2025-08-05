@@ -8,24 +8,26 @@ import (
 	"time"
 )
 
-const directory = "output/auth/"
-const fileName = "leetcode_auth.json"
-const fullPath = directory + fileName
+const (
+	directory = "output/auth/"
+	fileName  = "leetcode_auth.json"
+	fullPath  = directory + fileName
+)
 
 func (server *HttpServer) ImportAuthentication() error {
 	err := os.MkdirAll(directory, os.ModeDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create auth directory: %w", err)
 	}
 
 	authFileStream, err := os.ReadFile(fullPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read auth file: %w", err)
 	}
 
 	err = json.Unmarshal(authFileStream, &server.UserAuth)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse auth file: %w", err)
 	}
 
 	lastUpdated := server.UserAuth.LastUpdated
@@ -35,7 +37,7 @@ func (server *HttpServer) ImportAuthentication() error {
 		fmt.Println("Reminder to authenticate!")
 	} else {
 		user := GetUser()
-		fmt.Println(fmt.Sprintf("\nWelcome back, %s!\n", user.Data.UserStatus.Username))
+		fmt.Printf("\nWelcome back, %s!\n\n", user.Data.UserStatus.Username)
 	}
 
 	return nil
@@ -48,21 +50,25 @@ func (server *HttpServer) SaveAuthentication(cookiePairs map[string]string) erro
 
 	var cookies string
 	for ck, cv := range cookiePairs {
-		cookies += fmt.Sprintf("%s=%s; ", ck, cv)
+		cookies += ck + "=" + cv + "; "
 	}
 
 	server.UserAuth.AuthCookies = strings.TrimRight(cookies, "; ")
 	server.UserAuth.LastUpdated = time.Now()
 
-	authJson, _ := json.Marshal(server.UserAuth)
-	err := os.MkdirAll(directory, os.ModeDir)
+	authJson, err := json.Marshal(server.UserAuth)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal auth data: %w", err)
+	}
+
+	err = os.MkdirAll(directory, os.ModeDir)
+	if err != nil {
+		return fmt.Errorf("failed to create auth directory: %w", err)
 	}
 
 	err = os.WriteFile(fullPath, authJson, os.ModePerm)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write auth file: %w", err)
 	}
 
 	return nil
