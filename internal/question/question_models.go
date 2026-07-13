@@ -9,8 +9,9 @@ type QuestionsMetadataModel struct {
 }
 
 type QuestionMetadataModel struct {
-	QuestionId        int    `json:"question_id"`
-	QuestionTitleSlug string `json:"question__title_slug"`
+	QuestionId         int    `json:"question_id"`
+	QuestionTitleSlug  string `json:"question__title_slug"`
+	FrontEndQuestionId int    `json:"frontend_question_id"`
 }
 
 type QuestionResponse struct {
@@ -22,13 +23,14 @@ type QuestionsModel struct {
 }
 
 type QuestionModel struct {
-	QuestionId       string        `json:"questionId"`
-	Title            string        `json:"title"`
-	TitleSlug        string        `json:"titleSlug"`
-	Content          string        `json:"content"`
-	Difficulty       string        `json:"difficulty"`
-	ExampleTestCases string        `json:"exampleTestCases"`
-	CodeSnippets     []CodeSnippet `json:"codeSnippets"`
+	QuestionId         string        `json:"questionId"`
+	FrontEndQuestionId string        `json:"questionFrontendId"`
+	Title              string        `json:"title"`
+	TitleSlug          string        `json:"titleSlug"`
+	Content            string        `json:"content"`
+	Difficulty         string        `json:"difficulty"`
+	ExampleTestCases   string        `json:"exampleTestCases"`
+	CodeSnippets       []CodeSnippet `json:"codeSnippets"`
 }
 
 type CodeSnippet struct {
@@ -38,12 +40,13 @@ type CodeSnippet struct {
 }
 
 type Question struct {
-	QuestionId       string
-	Title            string
-	TitleSlug        string
-	Content          string
-	Difficulty       string
-	Language         string
-	CodeSnippet      string
-	ExampleTestCases string
+	QuestionId         string
+	FrontEndQuestionId string
+	Title              string
+	TitleSlug          string
+	Content            string
+	Difficulty         string
+	Language           string
+	CodeSnippet        string
+	ExampleTestCases   string
 }

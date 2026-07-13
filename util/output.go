@@ -15,13 +15,13 @@ func SaveMarkdownContent(ques q.Question) error {
 	sb.WriteString("# ")
 	sb.WriteString(ques.Difficulty)
 	sb.WriteString(": ")
-	sb.WriteString(ques.QuestionId)
+	sb.WriteString(ques.FrontEndQuestionId)
 	sb.WriteString(". ")
 	sb.WriteString(ques.Title)
 	sb.WriteByte('\n')
 	sb.WriteString(ques.Content)
 
-	dir := "output/problems/" + ques.TitleSlug + "/"
+	dir := "server/output/problems/" + ques.TitleSlug + "/"
 	err := os.MkdirAll(dir, os.ModeDir)
 	if err != nil {
 		return err
@@ -31,12 +31,12 @@ func SaveMarkdownContent(ques q.Question) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(dir+ques.QuestionId+"-"+ques.TitleSlug+".go", []byte(ques.CodeSnippet), os.ModePerm)
+	err = os.WriteFile(dir+ques.FrontEndQuestionId+"-"+ques.TitleSlug+".go", []byte(ques.CodeSnippet), os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Successfully created content for %s. %s\n", ques.QuestionId, ques.Title)
+	fmt.Printf("Successfully created content for %s. %s\n", ques.FrontEndQuestionId, ques.Title)
 	return nil
 }
 

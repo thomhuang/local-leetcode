@@ -7,14 +7,14 @@ import (
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
 )
 
-func ToQuestionMap(response AllQuestionsResponse) map[int]string {
+func ToQuestionMap(response AllQuestionsResponse) map[int]QuestionMetadataModel {
 	if len(response.Response) == 0 {
-		return map[int]string{}
+		return map[int]QuestionMetadataModel{}
 	}
 
-	res := make(map[int]string)
+	res := make(map[int]QuestionMetadataModel)
 	for _, question := range response.Response {
-		res[question.Metadata.QuestionId] = question.Metadata.QuestionTitleSlug
+		res[question.Metadata.FrontEndQuestionId] = question.Metadata
 	}
 
 	return res
@@ -34,13 +34,14 @@ func ToQuestion(response QuestionResponse) Question {
 	}
 
 	return Question{
-		QuestionId:       response.Data.QuestionInfo.QuestionId,
-		Title:            response.Data.QuestionInfo.Title,
-		TitleSlug:        response.Data.QuestionInfo.TitleSlug,
-		Content:          markdown,
-		Difficulty:       response.Data.QuestionInfo.Difficulty,
-		Language:         "Go",
-		CodeSnippet:      goCodeSnippet,
-		ExampleTestCases: response.Data.QuestionInfo.ExampleTestCases,
+		QuestionId:         response.Data.QuestionInfo.QuestionId,
+		FrontEndQuestionId: response.Data.QuestionInfo.FrontEndQuestionId,
+		Title:              response.Data.QuestionInfo.Title,
+		TitleSlug:          response.Data.QuestionInfo.TitleSlug,
+		Content:            markdown,
+		Difficulty:         response.Data.QuestionInfo.Difficulty,
+		Language:           "Go",
+		CodeSnippet:        goCodeSnippet,
+		ExampleTestCases:   response.Data.QuestionInfo.ExampleTestCases,
 	}
 }

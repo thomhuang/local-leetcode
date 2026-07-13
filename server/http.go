@@ -57,7 +57,7 @@ func (server *HttpServer) GetQuestion(slug string) (stream []byte, err error) {
 		"variables": map[string]interface{}{
 			"titleSlug": slug,
 		},
-		"query": `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId title titleSlug content difficulty likes dislikes exampleTestcases codeSnippets { lang langSlug code } topicTags { name slug } } }`,
+		"query": `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId questionFrontendId title titleSlug content difficulty likes dislikes exampleTestcases codeSnippets { lang langSlug code } topicTags { name slug } } }`,
 	}
 	jsonQuery, _ := json.Marshal(query) // shouldn't error here ever ...
 	resp, err := http.Post(GraphQlUrl, "application/json", bytes.NewBuffer(jsonQuery))
@@ -77,7 +77,7 @@ func (server *HttpServer) GetQuestion(slug string) (stream []byte, err error) {
 }
 
 func (server *HttpServer) InterpretSolution(questionId int, typedCode string) ([]byte, error) {
-	question := getQuestion(server.Questions[questionId])
+	question := getQuestion(server.Questions[questionId].QuestionTitleSlug)
 	isEmpty := question == q.Question{}
 	if isEmpty {
 		return nil, fmt.Errorf("question %d not found", questionId)
@@ -86,7 +86,7 @@ func (server *HttpServer) InterpretSolution(questionId int, typedCode string) ([
 	requestBody := s.InterpretSolutionRequest{
 		DataInput:  question.ExampleTestCases,
 		Language:   "golang",
-		QuestionId: strconv.Itoa(questionId),
+		QuestionId: strconv.Itoa(server.Questions[questionId].QuestionId),
 		TypedCode:  typedCode,
 	}
 	jsonRequest, _ := json.Marshal(requestBody)

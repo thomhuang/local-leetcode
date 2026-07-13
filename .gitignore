@@ -6,12 +6,15 @@
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # outputted files by program ...
-output/*
+server\output\local_leetcode_logs.txt
+
+# VS Code local settings
+.vscode/settings.json
 
 # .idea
 .idea/**/workspace.xml
 .idea/**/tasks.xml
-.idea/**/usage.statistics.xml
+.idea/**/usage.statistics.xmls
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/**/local-leetcode.iml

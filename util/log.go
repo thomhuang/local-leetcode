@@ -16,7 +16,7 @@ func NewLog() *Log {
 
 func (l *Log) OutputLogFile() {
 	if l.Length > 0 {
-		logFile, _ := os.Create("./output/local_leetcode_logs.txt")
+		logFile, _ := os.Create("server/output/local_leetcode_logs.txt")
 		defer logFile.Close()
 
 		_, _ = logFile.Write([]byte(strings.Join(l.Records, "\n")))

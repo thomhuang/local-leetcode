@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	q "github.com/thomhuang/local-leetcode/internal/question"
 	u "github.com/thomhuang/local-leetcode/internal/user"
 	"github.com/thomhuang/local-leetcode/util"
 )
@@ -10,7 +11,7 @@ import (
 type HttpServer struct {
 	Log       *util.Log
 	UserAuth  u.UserAuthInfo
-	Questions map[int]string
+	Questions map[int]q.QuestionMetadataModel
 }
 
 var server *HttpServer

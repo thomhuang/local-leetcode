@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	directory = "output/auth/"
+	directory = "server/output/auth/"
 	fileName  = "leetcode_auth.json"
 	fullPath  = directory + fileName
 )

@@ -12,25 +12,26 @@ import (
 	u "github.com/thomhuang/local-leetcode/internal/user"
 )
 
-func (server *HttpServer) getQuestions() map[int]string {
+func (server *HttpServer) getQuestions() map[int]q.QuestionMetadataModel {
 	var stream []byte
-	file, err := os.Stat("./output/all_problems.json")
+	file, err := os.Stat("server/output/all_problems.json")
 	// if we can't get the file stats OR it exists, but it's > 5 days old ...
 	if err != nil || file.ModTime().Before(time.Now().AddDate(0, 0, -5)) {
 		stream, err = server.GetAllQuestions()
 		if err != nil {
-			return map[int]string{}
+			server.Log.Append("File doesn't exist or stale!")
+			return map[int]q.QuestionMetadataModel{}
 		}
 
-		err := os.WriteFile("./output/all_problems.json", stream, os.ModePerm)
+		err := os.WriteFile("server/output/all_problems.json", stream, os.ModePerm)
 		if err != nil {
 			server.Log.Append(fmt.Sprintf("Unable to cache problems json, %s", err.Error()))
 		}
 	} else {
-		stream, err = os.ReadFile("./output/all_problems.json")
+		stream, err = os.ReadFile("server/output/all_problems.json")
 		if err != nil {
 			server.Log.Append(fmt.Sprintf("failed to read cached file %s", err.Error()))
-			return map[int]string{}
+			return map[int]q.QuestionMetadataModel{}
 		}
 	}
 
@@ -38,14 +39,17 @@ func (server *HttpServer) getQuestions() map[int]string {
 	err = json.Unmarshal(stream, &questions)
 	if err != nil {
 		server.Log.Append(fmt.Sprintf("could not unmarshal problems metadata response body: %s\n", err.Error()))
-		return map[int]string{}
+		return map[int]q.QuestionMetadataModel{}
 	}
 	if len(questions.Response) == 0 {
 		server.Log.Append("No problems found with no error!")
-		return map[int]string{}
+		return map[int]q.QuestionMetadataModel{}
 	}
 
-	return q.ToQuestionMap(questions)
+	response := q.ToQuestionMap(questions)
+	server.Log.Append(fmt.Sprintf("getQuestions response: %+v", response))
+
+	return response
 }
 
 func getQuestion(slug string) q.Question {

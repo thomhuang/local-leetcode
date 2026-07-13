@@ -97,7 +97,7 @@ func (server *HttpServer) promptForAction(scanner *bufio.Scanner) UserAction {
 func (server *HttpServer) handleAddQuestion(scanner *bufio.Scanner) {
 	id := server.promptForQuestionID(scanner, "What problem number are you interested in?")
 
-	err := util.SaveMarkdownContent(getQuestion(server.Questions[id]))
+	err := util.SaveMarkdownContent(getQuestion(server.Questions[id].QuestionTitleSlug))
 	if err != nil {
 		server.Log.Append("Failed to save question content! " + err.Error())
 		return
@@ -123,8 +123,9 @@ func (server *HttpServer) handleAuthentication(scanner *bufio.Scanner) {
 func (server *HttpServer) handleTestCode(scanner *bufio.Scanner) {
 	id := server.promptForQuestionID(scanner, "What problem number would you like to run? Please make sure it exists under /output/problems/{titleSlug}")
 
-	titleSlug := server.Questions[id]
-	filePath := "output/problems/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
+	titleSlug := server.Questions[id].QuestionTitleSlug
+	filePath := "server/output/problems/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
+
 	fileStream, err := os.ReadFile(filePath)
 	if err != nil {
 		server.Log.Append("Failed to read problem file! " + err.Error())
