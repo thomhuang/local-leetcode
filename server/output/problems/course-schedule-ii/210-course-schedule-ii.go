@@ -1,6 +1,6 @@
-package course_schedule
+package course_schedule_ii
 
-func canFinish(numCourses int, prerequisites [][]int) bool {
+func findOrder(numCourses int, prerequisites [][]int) []int {
 	numPrerequisites := make([]int, numCourses)
 	adj := make([][]int, numCourses)
 	for _, prereq := range prerequisites {
@@ -15,9 +15,12 @@ func canFinish(numCourses int, prerequisites [][]int) bool {
 		}
 	}
 
+	res := make([]int, 0)
 	for len(queue) > 0 {
 		course := queue[0]
 		queue = queue[1:]
+
+		res = append(res, course)
 
 		for _, neighbor := range adj[course] {
 			numPrerequisites[neighbor]--
@@ -27,11 +30,9 @@ func canFinish(numCourses int, prerequisites [][]int) bool {
 		}
 	}
 
-	for _, total := range numPrerequisites {
-		if total != 0 {
-			return false
-		}
+	if len(res) != numCourses {
+		return []int{}
 	}
 
-	return true
+	return res
 }
