@@ -8,14 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
-	q "github.com/thomhuang/local-leetcode/internal/question"
-	s "github.com/thomhuang/local-leetcode/internal/solution"
-	"github.com/thomhuang/local-leetcode/util"
-)
-
-const (
-	GET  string = "GET"
-	POST        = "POST"
+	"github.com/thomhuang/local-leetcode/internal/question"
+	"github.com/thomhuang/local-leetcode/internal/solution"
 )
 
 const (
@@ -23,32 +17,26 @@ const (
 	GraphQlUrl = BaseUrl + "graphql/"
 )
 
-func NewHttpServer() *HttpServer {
-	return &HttpServer{
-		Log: util.NewLog(),
-	}
-}
-
-func (server *HttpServer) GetAllQuestions() (stream []byte, err error) {
+func (app *App) GetAllQuestions() ([]byte, error) {
 	resp, err := http.Get(BaseUrl + "api/problems/all/")
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("GetAllQuestions: could not download problems metadata: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("GetAllQuestions: could not download problems metadata: %s\n", err.Error()))
 		return []byte{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("GetAllQuestions: could not read zipped problems metadata response body: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("GetAllQuestions: could not read problems metadata response body: %s\n", err.Error()))
 		return []byte{}, err
 	}
 
 	return body, nil
 }
 
-func (server *HttpServer) GetQuestion(slug string) (stream []byte, err error) {
+func (app *App) GetQuestion(slug string) ([]byte, error) {
 	if len(slug) <= 0 {
-		server.Log.Append("GetQuestion: title slug must not be empty")
+		app.Log.Append("GetQuestion: title slug must not be empty")
 		return []byte{}, fmt.Errorf("slug must not be empty")
 	}
 
@@ -62,71 +50,69 @@ func (server *HttpServer) GetQuestion(slug string) (stream []byte, err error) {
 	jsonQuery, _ := json.Marshal(query) // shouldn't error here ever ...
 	resp, err := http.Post(GraphQlUrl, "application/json", bytes.NewBuffer(jsonQuery))
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("GetQuestion: could not download problem info: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("GetQuestion: could not download problem info: %s\n", err.Error()))
 		return []byte{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("GetQuestion: could not read zipped problems metadata response body: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("GetQuestion: could not read problem info response body: %s\n", err.Error()))
 		return []byte{}, err
 	}
 
 	return body, nil
 }
 
-func (server *HttpServer) InterpretSolution(questionId int, typedCode string) ([]byte, error) {
-	question := getQuestion(server.Questions[questionId].QuestionTitleSlug)
-	isEmpty := question == q.Question{}
-	if isEmpty {
+func (app *App) InterpretSolution(questionId int, typedCode string) ([]byte, error) {
+	ques := app.fetchQuestion(app.Questions[questionId].QuestionTitleSlug)
+	if ques == (question.Question{}) {
 		return nil, fmt.Errorf("question %d not found", questionId)
 	}
 
-	requestBody := s.InterpretSolutionRequest{
-		DataInput:  question.ExampleTestCases,
+	requestBody := solution.InterpretSolutionRequest{
+		DataInput:  ques.ExampleTestCases,
 		Language:   "golang",
-		QuestionId: strconv.Itoa(server.Questions[questionId].QuestionId),
+		QuestionId: strconv.Itoa(app.Questions[questionId].QuestionId),
 		TypedCode:  typedCode,
 	}
 	jsonRequest, _ := json.Marshal(requestBody)
-	requestUrlPath := BaseUrl + "problems/" + question.TitleSlug + "/interpret_solution/"
-	request, err := server.getRequestWithHeaders(POST, requestUrlPath, jsonRequest)
+	requestUrlPath := BaseUrl + "problems/" + ques.TitleSlug + "/interpret_solution/"
+	request, err := app.getRequestWithHeaders(http.MethodPost, requestUrlPath, jsonRequest)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("InterpretSolution: could not create request: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("InterpretSolution: could not create request: %s\n", err.Error()))
 		return []byte{}, err
 	}
-	questionUrl := BaseUrl + "problems/" + question.TitleSlug
+	questionUrl := BaseUrl + "problems/" + ques.TitleSlug
 	request.Header.Set("Referer", questionUrl)
 
 	client := &http.Client{}
 	resp, err := client.Do(request)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("InterpretSolution: could not get user info data: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("InterpretSolution: could not get user info data: %s\n", err.Error()))
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("InterpretSolution: could not read response body: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("InterpretSolution: could not read response body: %s\n", err.Error()))
 		return []byte{}, err
 	}
 
 	return body, nil
 }
 
-func (server *HttpServer) CheckSolution(interpretId, titleSlug string) ([]byte, error) {
+func (app *App) CheckSolution(interpretId, titleSlug string) ([]byte, error) {
 	if len(interpretId) == 0 {
-		errorMsg := "CheckSolution: interpretId must not valid/non-empty"
-		server.Log.Append(errorMsg)
-		return nil, fmt.Errorf(errorMsg)
+		app.Log.Append("CheckSolution: interpretId must not be empty")
+		return nil, fmt.Errorf("interpretId must not be empty")
 	}
 
 	requestPath := BaseUrl + "submissions/detail/" + interpretId + "/check/"
-	request, err := server.getRequestWithHeaders(GET, requestPath, nil)
+	request, err := app.getRequestWithHeaders(http.MethodGet, requestPath, nil)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("CheckSolution: could not create request: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("CheckSolution: could not create request: %s\n", err.Error()))
 		return []byte{}, err
 	}
 	questionUrl := BaseUrl + "problems/" + titleSlug
@@ -135,23 +121,23 @@ func (server *HttpServer) CheckSolution(interpretId, titleSlug string) ([]byte, 
 	client := &http.Client{}
 	resp, err := client.Do(request)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("CheckSolution: could not get check solution for given interpretId: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("CheckSolution: could not get check solution for given interpretId: %s\n", err.Error()))
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("CheckSolution: could not read solution status response body: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("CheckSolution: could not read solution status response body: %s\n", err.Error()))
 		return []byte{}, err
 	}
 
 	return body, nil
 }
 
-func (server *HttpServer) GetUser() (stream []byte, err error) {
-	if len(server.UserAuth.AuthCookies) == 0 {
-		server.Log.Append("Authenticate first!")
+func (app *App) GetUser() ([]byte, error) {
+	if len(app.UserAuth.AuthCookies) == 0 {
+		app.Log.Append("Authenticate first!")
 		return []byte{}, fmt.Errorf("user needs to be authenticated")
 	}
 
@@ -161,30 +147,30 @@ func (server *HttpServer) GetUser() (stream []byte, err error) {
 		"query":         `query globalData {  userStatus { realName username } }`,
 	}
 	jsonQuery, _ := json.Marshal(query)
-	request, err := server.getRequestWithHeaders(POST, GraphQlUrl, jsonQuery)
+	request, err := app.getRequestWithHeaders(http.MethodPost, GraphQlUrl, jsonQuery)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("GetUser: could not create request: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("GetUser: could not create request: %s\n", err.Error()))
 		return []byte{}, err
 	}
 
 	client := &http.Client{}
 	resp, err := client.Do(request)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("GetUser: could not get user info data: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("GetUser: could not get user info data: %s\n", err.Error()))
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("GetUser: could not read user metadata response body: %s\n", err.Error()))
+		app.Log.Append(fmt.Sprintf("GetUser: could not read user metadata response body: %s\n", err.Error()))
 		return []byte{}, err
 	}
 
 	return body, nil
 }
 
-func (server *HttpServer) getRequestWithHeaders(method, route string, req []byte) (*http.Request, error) {
+func (app *App) getRequestWithHeaders(method, route string, req []byte) (*http.Request, error) {
 	var body io.Reader
 	if req == nil {
 		body = nil
@@ -197,8 +183,8 @@ func (server *HttpServer) getRequestWithHeaders(method, route string, req []byte
 		return nil, err
 	}
 
-	request.Header.Set("Cookie", server.UserAuth.AuthCookies)
-	request.Header.Set("X-Csrftoken", server.UserAuth.CsrfToken)
+	request.Header.Set("Cookie", app.UserAuth.AuthCookies)
+	request.Header.Set("X-Csrftoken", app.UserAuth.CsrfToken)
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
 	request.Header.Set("Access-Control-Allow-Origin", "*")
 

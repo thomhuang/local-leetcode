@@ -1,5 +1,10 @@
 package solution
 
+const (
+	Pending = "PENDING"
+	Started = "STARTED"
+)
+
 type InterpretSolutionRequest struct {
 	Language   string `json:"lang"`
 	QuestionId string `json:"question_id"`

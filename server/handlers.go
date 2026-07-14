@@ -4,117 +4,76 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
-	q "github.com/thomhuang/local-leetcode/internal/question"
-	s "github.com/thomhuang/local-leetcode/internal/solution"
-	u "github.com/thomhuang/local-leetcode/internal/user"
+	"github.com/thomhuang/local-leetcode/internal/question"
+	"github.com/thomhuang/local-leetcode/internal/solution"
+	"github.com/thomhuang/local-leetcode/internal/user"
 )
 
-func (server *HttpServer) getQuestions() map[int]q.QuestionMetadataModel {
-	var stream []byte
-	file, err := os.Stat("server/output/all_problems.json")
-	// if we can't get the file stats OR it exists, but it's > 5 days old ...
-	if err != nil || file.ModTime().Before(time.Now().AddDate(0, 0, -5)) {
-		stream, err = server.GetAllQuestions()
-		if err != nil {
-			server.Log.Append("File doesn't exist or stale!")
-			return map[int]q.QuestionMetadataModel{}
-		}
-
-		err := os.WriteFile("server/output/all_problems.json", stream, os.ModePerm)
-		if err != nil {
-			server.Log.Append(fmt.Sprintf("Unable to cache problems json, %s", err.Error()))
-		}
-	} else {
-		stream, err = os.ReadFile("server/output/all_problems.json")
-		if err != nil {
-			server.Log.Append(fmt.Sprintf("failed to read cached file %s", err.Error()))
-			return map[int]q.QuestionMetadataModel{}
-		}
-	}
-
-	var questions q.AllQuestionsResponse
-	err = json.Unmarshal(stream, &questions)
+func (app *App) fetchQuestion(slug string) question.Question {
+	stream, err := app.GetQuestion(slug)
 	if err != nil {
-		server.Log.Append(fmt.Sprintf("could not unmarshal problems metadata response body: %s\n", err.Error()))
-		return map[int]q.QuestionMetadataModel{}
-	}
-	if len(questions.Response) == 0 {
-		server.Log.Append("No problems found with no error!")
-		return map[int]q.QuestionMetadataModel{}
+		return question.Question{}
 	}
 
-	response := q.ToQuestionMap(questions)
-	server.Log.Append(fmt.Sprintf("getQuestions response: %+v", response))
+	var resp question.QuestionResponse
+	err = json.Unmarshal(stream, &resp)
+	if err != nil {
+		return question.Question{}
+	}
 
-	return response
+	return question.ToQuestion(resp)
 }
 
-func getQuestion(slug string) q.Question {
-	stream, err := server.GetQuestion(slug)
+func (app *App) fetchUser() user.UserStatusResponse {
+	stream, err := app.GetUser()
 	if err != nil {
-		return q.Question{}
+		return user.UserStatusResponse{}
 	}
 
-	var question q.QuestionResponse
-	err = json.Unmarshal(stream, &question)
+	var u user.UserStatusResponse
+	err = json.Unmarshal(stream, &u)
 	if err != nil {
-		return q.Question{}
+		return user.UserStatusResponse{}
 	}
 
-	return q.ToQuestion(question)
+	return u
 }
 
-func GetUser() u.UserStatusResponse {
-	stream, err := server.GetUser()
+func (app *App) fetchInterpretation(questionId int, typedCode string) solution.InterpretSolutionResponse {
+	stream, err := app.InterpretSolution(questionId, typedCode)
 	if err != nil {
-		return u.UserStatusResponse{}
+		return solution.InterpretSolutionResponse{}
 	}
 
-	var user u.UserStatusResponse
-	err = json.Unmarshal(stream, &user)
-	if err != nil {
-		return u.UserStatusResponse{}
-	}
-
-	return user
-}
-
-func InterpretSolution(questionId int, typedCode string) s.InterpretSolutionResponse {
-	stream, err := server.InterpretSolution(questionId, typedCode)
-	if err != nil {
-		return s.InterpretSolutionResponse{}
-	}
-
-	var interpretation s.InterpretSolutionResponse
+	var interpretation solution.InterpretSolutionResponse
 	err = json.Unmarshal(stream, &interpretation)
 	if err != nil {
-		return s.InterpretSolutionResponse{}
+		return solution.InterpretSolutionResponse{}
 	}
 
 	return interpretation
 }
 
-func CheckSolution(interpretId, titleSlug string) s.CheckSolutionResponse {
-	stream, err := server.CheckSolution(interpretId, titleSlug)
+func (app *App) fetchCheckResult(interpretId, titleSlug string) solution.CheckSolutionResponse {
+	stream, err := app.CheckSolution(interpretId, titleSlug)
 	if err != nil {
-		return s.CheckSolutionResponse{}
+		return solution.CheckSolutionResponse{}
 	}
 
-	var submissionStatus s.CheckSolutionResponse
+	var submissionStatus solution.CheckSolutionResponse
 	err = json.Unmarshal(stream, &submissionStatus)
 	if err != nil {
-		return s.CheckSolutionResponse{}
+		return solution.CheckSolutionResponse{}
 	}
 
 	return submissionStatus
 }
 
-func PollCheckSolution(interpretId, titleSlug string) s.CheckSolutionResponse {
+func (app *App) pollSolution(interpretId, titleSlug string) solution.CheckSolutionResponse {
 	if len(interpretId) == 0 {
-		return s.CheckSolutionResponse{}
+		return solution.CheckSolutionResponse{}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -123,19 +82,19 @@ func PollCheckSolution(interpretId, titleSlug string) s.CheckSolutionResponse {
 	ticker := time.NewTicker(time.Second) // Poll every 1s
 	defer ticker.Stop()
 
-	var resp s.CheckSolutionResponse
+	var resp solution.CheckSolutionResponse
 	for {
 		select {
 		case <-ctx.Done():
 			return resp
 		case <-ticker.C:
-			if resp.State == Started {
+			if resp.State == solution.Started {
 				// Final call to get the data
 				fmt.Println("Submitted!")
-				return CheckSolution(interpretId, titleSlug)
+				return app.fetchCheckResult(interpretId, titleSlug)
 			} else {
 				fmt.Println("Pending...")
-				resp = CheckSolution(interpretId, titleSlug)
+				resp = app.fetchCheckResult(interpretId, titleSlug)
 			}
 		}
 	}

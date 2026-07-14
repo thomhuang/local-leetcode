@@ -6,7 +6,8 @@
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # outputted files by program ...
-server\output\local_leetcode_logs.txt
+server/output/local_leetcode_logs.txt
+server/output/auth/leetcode_auth.json
 
 # VS Code local settings
 .vscode/settings.json

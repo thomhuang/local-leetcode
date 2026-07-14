@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/thomhuang/local-leetcode/util"
 )
 
 type UserAction int
@@ -23,24 +21,19 @@ const (
 	Exit
 )
 
-const (
-	Pending = "PENDING"
-	Started = "STARTED"
-)
-
-func (server *HttpServer) Prompt() {
+func (app *App) Prompt() {
 	scanner := bufio.NewScanner(os.Stdin)
 	var exit bool
 	for !exit {
-		action := server.promptForAction(scanner)
+		action := app.promptForAction(scanner)
 
 		switch action {
 		case AddQuestion:
-			server.handleAddQuestion(scanner)
+			app.handleAddQuestion(scanner)
 		case Authenticate:
-			server.handleAuthentication(scanner)
+			app.handleAuthentication(scanner)
 		case TestCode:
-			server.handleTestCode(scanner)
+			app.handleTestCode(scanner)
 		case SubmitCode:
 			// TODO: Implement submit code functionality
 			fmt.Println("Submit code functionality not yet implemented")
@@ -52,10 +45,10 @@ func (server *HttpServer) Prompt() {
 		}
 	}
 
-	server.Log.OutputLogFile()
+	app.Log.OutputLogFile()
 }
 
-func (server *HttpServer) promptForAction(scanner *bufio.Scanner) UserAction {
+func (app *App) promptForAction(scanner *bufio.Scanner) UserAction {
 	var action UserAction
 	var sb strings.Builder
 	sb.WriteString("--------------------------------------------------------------------\n")
@@ -67,7 +60,7 @@ func (server *HttpServer) promptForAction(scanner *bufio.Scanner) UserAction {
 	sb.WriteString("(5) Exit\n")
 	sb.WriteString("--------------------------------------------------------------------")
 
-	server.promptWithValidation(
+	app.promptWithValidation(
 		scanner,
 		sb.String(),
 		func(input string) (bool, string) {
@@ -94,41 +87,41 @@ func (server *HttpServer) promptForAction(scanner *bufio.Scanner) UserAction {
 	return action
 }
 
-func (server *HttpServer) handleAddQuestion(scanner *bufio.Scanner) {
-	id := server.promptForQuestionID(scanner, "What problem number are you interested in?")
+func (app *App) handleAddQuestion(scanner *bufio.Scanner) {
+	id := app.promptForQuestionID(scanner, "What problem number are you interested in?")
 
-	err := util.SaveMarkdownContent(getQuestion(server.Questions[id].QuestionTitleSlug))
+	err := SaveMarkdownContent(app.fetchQuestion(app.Questions[id].QuestionTitleSlug))
 	if err != nil {
-		server.Log.Append("Failed to save question content! " + err.Error())
+		app.Log.Append("Failed to save question content! " + err.Error())
 		return
 	}
 }
 
-func (server *HttpServer) handleAuthentication(scanner *bufio.Scanner) {
-	if server.shouldSkipAuthentication(scanner) {
+func (app *App) handleAuthentication(scanner *bufio.Scanner) {
+	if app.shouldSkipAuthentication(scanner) {
 		return
 	}
 
-	cookies := server.promptForCookies(scanner)
-	err := server.SaveAuthentication(cookies)
+	cookies := app.promptForCookies(scanner)
+	err := app.SaveAuthentication(cookies)
 	if err != nil {
-		server.Log.Append("Failed to save authentication cookies! " + err.Error())
+		app.Log.Append("Failed to save authentication cookies! " + err.Error())
 	}
 
-	user := GetUser()
+	user := app.fetchUser()
 	fmt.Println(user.Data.UserStatus.FullName)
 	fmt.Println(user.Data.UserStatus.Username)
 }
 
-func (server *HttpServer) handleTestCode(scanner *bufio.Scanner) {
-	id := server.promptForQuestionID(scanner, "What problem number would you like to run? Please make sure it exists under /output/problems/{titleSlug}")
+func (app *App) handleTestCode(scanner *bufio.Scanner) {
+	id := app.promptForQuestionID(scanner, "What problem number would you like to run? Please make sure it exists under /output/problems/{titleSlug}")
 
-	titleSlug := server.Questions[id].QuestionTitleSlug
-	filePath := "server/output/problems/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
+	titleSlug := app.Questions[id].QuestionTitleSlug
+	filePath := problemsDir + "/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
 
 	fileStream, err := os.ReadFile(filePath)
 	if err != nil {
-		server.Log.Append("Failed to read problem file! " + err.Error())
+		app.Log.Append("Failed to read problem file! " + err.Error())
 		return
 	}
 
@@ -138,16 +131,16 @@ func (server *HttpServer) handleTestCode(scanner *bufio.Scanner) {
 		"package "+packageName+"\n\n",
 		"")
 
-	pendingSolution := InterpretSolution(id, userSubmission)
+	pendingSolution := app.fetchInterpretation(id, userSubmission)
 	interpretedId := pendingSolution.InterpretId
 
-	solution := PollCheckSolution(interpretedId, titleSlug)
-	fmt.Println(util.OutputQuestionResults(solution))
+	result := app.pollSolution(interpretedId, titleSlug)
+	fmt.Println(OutputQuestionResults(result))
 }
 
-func (server *HttpServer) promptForQuestionID(scanner *bufio.Scanner, prompt string) int {
+func (app *App) promptForQuestionID(scanner *bufio.Scanner, prompt string) int {
 	var id int
-	server.promptWithValidation(
+	app.promptWithValidation(
 		scanner,
 		prompt,
 		func(input string) (bool, string) {
@@ -163,20 +156,20 @@ func (server *HttpServer) promptForQuestionID(scanner *bufio.Scanner, prompt str
 	return id
 }
 
-func (server *HttpServer) shouldSkipAuthentication(scanner *bufio.Scanner) bool {
-	lastUpdated := server.UserAuth.LastUpdated
-	fiveDaysPrev := time.Now().AddDate(0, 0, -5)
+func (app *App) shouldSkipAuthentication(scanner *bufio.Scanner) bool {
+	lastUpdated := app.UserAuth.LastUpdated
+	fiveDaysPrev := time.Now().AddDate(0, 0, -authFreshnessDays)
 	if fiveDaysPrev.Before(lastUpdated) {
 		daysDiff := int(lastUpdated.Sub(fiveDaysPrev).Hours() / 24)
 		msg := fmt.Sprintf("Are you sure you still want to authenticate? You have %d days left!", daysDiff)
-		return !server.promptYesNo(scanner, msg)
+		return !app.promptYesNo(scanner, msg)
 	}
 	return false
 }
 
-func (server *HttpServer) promptForCookies(scanner *bufio.Scanner) map[string]string {
+func (app *App) promptForCookies(scanner *bufio.Scanner) map[string]string {
 	cookies := make(map[string]string)
-	server.promptWithValidation(
+	app.promptWithValidation(
 		scanner,
 		"Please input your authenticated request cookies from a https://leetcode.com/graphql call!",
 		func(input string) (bool, string) {
@@ -187,7 +180,7 @@ func (server *HttpServer) promptForCookies(scanner *bufio.Scanner) map[string]st
 				curr := strings.Split(strings.TrimSpace(pair), "=")
 				if curr[0] == "csrftoken" {
 					cookies[curr[0]] = curr[1]
-					server.UserAuth.CsrfToken = curr[1]
+					app.UserAuth.CsrfToken = curr[1]
 				}
 				if curr[0] == "LEETCODE_SESSION" {
 					cookies[curr[0]] = curr[1]
@@ -203,10 +196,10 @@ func (server *HttpServer) promptForCookies(scanner *bufio.Scanner) map[string]st
 	return cookies
 }
 
-func (server *HttpServer) promptYesNo(scanner *bufio.Scanner, question string) bool {
+func (app *App) promptYesNo(scanner *bufio.Scanner, question string) bool {
 	for {
 		fmt.Printf("%s Y/N\n", question)
-		input := server.readInput(scanner)
+		input := app.readInput(scanner)
 
 		if len(input) != 1 {
 			fmt.Println("Please input Y or N!")
@@ -226,10 +219,10 @@ func (server *HttpServer) promptYesNo(scanner *bufio.Scanner, question string) b
 	}
 }
 
-func (server *HttpServer) promptWithValidation(scanner *bufio.Scanner, prompt string, validate func(string) (bool, string)) string {
+func (app *App) promptWithValidation(scanner *bufio.Scanner, prompt string, validate func(string) (bool, string)) string {
 	for {
 		fmt.Println(prompt)
-		input := server.readInput(scanner)
+		input := app.readInput(scanner)
 		fmt.Println()
 
 		if valid, errorMsg := validate(input); valid {
@@ -243,7 +236,7 @@ func (server *HttpServer) promptWithValidation(scanner *bufio.Scanner, prompt st
 	}
 }
 
-func (server *HttpServer) readInput(scanner *bufio.Scanner) string {
+func (app *App) readInput(scanner *bufio.Scanner) string {
 	scanner.Scan()
 	return scanner.Text()
 }

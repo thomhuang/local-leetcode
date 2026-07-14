@@ -1,15 +1,15 @@
-package util
+package main
 
 import (
 	"fmt"
 	"os"
 	"strings"
 
-	q "github.com/thomhuang/local-leetcode/internal/question"
-	s "github.com/thomhuang/local-leetcode/internal/solution"
+	"github.com/thomhuang/local-leetcode/internal/question"
+	"github.com/thomhuang/local-leetcode/internal/solution"
 )
 
-func SaveMarkdownContent(ques q.Question) error {
+func SaveMarkdownContent(ques question.Question) error {
 	var sb strings.Builder
 
 	sb.WriteString("# ")
@@ -21,7 +21,7 @@ func SaveMarkdownContent(ques q.Question) error {
 	sb.WriteByte('\n')
 	sb.WriteString(ques.Content)
 
-	dir := "server/output/problems/" + ques.TitleSlug + "/"
+	dir := problemsDir + "/" + ques.TitleSlug + "/"
 	err := os.MkdirAll(dir, os.ModeDir)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func SaveMarkdownContent(ques q.Question) error {
 	return nil
 }
 
-func OutputQuestionResults(submission s.CheckSolutionResponse) string {
+func OutputQuestionResults(submission solution.CheckSolutionResponse) string {
 	var sb strings.Builder
 
 	sb.WriteRune('\n')

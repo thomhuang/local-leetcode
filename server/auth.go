@@ -8,42 +8,36 @@ import (
 	"time"
 )
 
-const (
-	directory = "server/output/auth/"
-	fileName  = "leetcode_auth.json"
-	fullPath  = directory + fileName
-)
-
-func (server *HttpServer) ImportAuthentication() error {
-	err := os.MkdirAll(directory, os.ModeDir)
+func (app *App) ImportAuthentication() error {
+	err := os.MkdirAll(authDir, os.ModeDir)
 	if err != nil {
 		return fmt.Errorf("failed to create auth directory: %w", err)
 	}
 
-	authFileStream, err := os.ReadFile(fullPath)
+	authFileStream, err := os.ReadFile(authFile)
 	if err != nil {
 		return fmt.Errorf("failed to read auth file: %w", err)
 	}
 
-	err = json.Unmarshal(authFileStream, &server.UserAuth)
+	err = json.Unmarshal(authFileStream, &app.UserAuth)
 	if err != nil {
 		return fmt.Errorf("failed to parse auth file: %w", err)
 	}
 
-	lastUpdated := server.UserAuth.LastUpdated
+	lastUpdated := app.UserAuth.LastUpdated
 	// We should be authenticated for 7 days, so if already authenticated within 5, ask if they still want to ...
-	fiveDaysPrev := time.Now().AddDate(0, 0, -5)
-	if len(server.UserAuth.AuthCookies) == 0 || fiveDaysPrev.After(lastUpdated) {
+	fiveDaysPrev := time.Now().AddDate(0, 0, -authFreshnessDays)
+	if len(app.UserAuth.AuthCookies) == 0 || fiveDaysPrev.After(lastUpdated) {
 		fmt.Println("Reminder to authenticate!")
 	} else {
-		user := GetUser()
+		user := app.fetchUser()
 		fmt.Printf("\nWelcome back, %s!\n\n", user.Data.UserStatus.Username)
 	}
 
 	return nil
 }
 
-func (server *HttpServer) SaveAuthentication(cookiePairs map[string]string) error {
+func (app *App) SaveAuthentication(cookiePairs map[string]string) error {
 	if len(cookiePairs) == 0 {
 		return nil
 	}
@@ -53,20 +47,20 @@ func (server *HttpServer) SaveAuthentication(cookiePairs map[string]string) erro
 		cookies += ck + "=" + cv + "; "
 	}
 
-	server.UserAuth.AuthCookies = strings.TrimRight(cookies, "; ")
-	server.UserAuth.LastUpdated = time.Now()
+	app.UserAuth.AuthCookies = strings.TrimRight(cookies, "; ")
+	app.UserAuth.LastUpdated = time.Now()
 
-	authJson, err := json.Marshal(server.UserAuth)
+	authJson, err := json.Marshal(app.UserAuth)
 	if err != nil {
 		return fmt.Errorf("failed to marshal auth data: %w", err)
 	}
 
-	err = os.MkdirAll(directory, os.ModeDir)
+	err = os.MkdirAll(authDir, os.ModeDir)
 	if err != nil {
 		return fmt.Errorf("failed to create auth directory: %w", err)
 	}
 
-	err = os.WriteFile(fullPath, authJson, os.ModePerm)
+	err = os.WriteFile(authFile, authJson, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to write auth file: %w", err)
 	}

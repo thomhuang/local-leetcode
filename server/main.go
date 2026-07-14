@@ -3,30 +3,34 @@ package main
 import (
 	"os"
 
-	q "github.com/thomhuang/local-leetcode/internal/question"
-	u "github.com/thomhuang/local-leetcode/internal/user"
+	"github.com/thomhuang/local-leetcode/internal/question"
+	"github.com/thomhuang/local-leetcode/internal/user"
 	"github.com/thomhuang/local-leetcode/util"
 )
 
-type HttpServer struct {
+type App struct {
 	Log       *util.Log
-	UserAuth  u.UserAuthInfo
-	Questions map[int]q.QuestionMetadataModel
+	UserAuth  user.UserAuthInfo
+	Questions map[int]question.QuestionMetadata
 }
 
-var server *HttpServer
-
 func main() {
-	_ = os.Mkdir("output", os.ModeDir)
+	_ = os.MkdirAll(outputDir, os.ModeDir)
 
-	server = NewHttpServer()
+	app := NewApp()
 
-	server.Questions = server.getQuestions()
+	app.Questions = app.getQuestions()
 
-	err := server.ImportAuthentication()
+	err := app.ImportAuthentication()
 	if err != nil {
-		server.Log.Append("Unable to import existing authentication! " + err.Error())
+		app.Log.Append("Unable to import existing authentication! " + err.Error())
 	}
 
-	server.Prompt()
+	app.Prompt()
+}
+
+func NewApp() *App {
+	return &App{
+		Log: util.NewLog(),
+	}
 }

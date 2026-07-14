@@ -7,12 +7,12 @@ import (
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
 )
 
-func ToQuestionMap(response AllQuestionsResponse) map[int]QuestionMetadataModel {
+func ToQuestionMap(response AllQuestionsResponse) map[int]QuestionMetadata {
 	if len(response.Response) == 0 {
-		return map[int]QuestionMetadataModel{}
+		return map[int]QuestionMetadata{}
 	}
 
-	res := make(map[int]QuestionMetadataModel)
+	res := make(map[int]QuestionMetadata)
 	for _, question := range response.Response {
 		res[question.Metadata.FrontEndQuestionId] = question.Metadata
 	}
@@ -21,12 +21,12 @@ func ToQuestionMap(response AllQuestionsResponse) map[int]QuestionMetadataModel 
 }
 
 func ToQuestion(response QuestionResponse) Question {
-	markdown, _ := htmltomarkdown.ConvertString(response.Data.QuestionInfo.Content)
+	markdown, _ := htmltomarkdown.ConvertString(response.Data.Question.Content)
 
 	var goCodeSnippet string
-	for _, snippet := range response.Data.QuestionInfo.CodeSnippets {
+	for _, snippet := range response.Data.Question.CodeSnippets {
 		if snippet.Language == "Go" {
-			titleSlug := response.Data.QuestionInfo.TitleSlug
+			titleSlug := response.Data.Question.TitleSlug
 			titleSlug = strings.ReplaceAll(titleSlug, "-", "_")
 			goCodeSnippet = fmt.Sprintf("package %s\n\n%s", titleSlug, snippet.Code)
 			break
@@ -34,14 +34,14 @@ func ToQuestion(response QuestionResponse) Question {
 	}
 
 	return Question{
-		QuestionId:         response.Data.QuestionInfo.QuestionId,
-		FrontEndQuestionId: response.Data.QuestionInfo.FrontEndQuestionId,
-		Title:              response.Data.QuestionInfo.Title,
-		TitleSlug:          response.Data.QuestionInfo.TitleSlug,
+		QuestionId:         response.Data.Question.QuestionId,
+		FrontEndQuestionId: response.Data.Question.FrontEndQuestionId,
+		Title:              response.Data.Question.Title,
+		TitleSlug:          response.Data.Question.TitleSlug,
 		Content:            markdown,
-		Difficulty:         response.Data.QuestionInfo.Difficulty,
+		Difficulty:         response.Data.Question.Difficulty,
 		Language:           "Go",
 		CodeSnippet:        goCodeSnippet,
-		ExampleTestCases:   response.Data.QuestionInfo.ExampleTestCases,
+		ExampleTestCases:   response.Data.Question.ExampleTestCases,
 	}
 }

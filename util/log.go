@@ -7,7 +7,6 @@ import (
 
 type Log struct {
 	Records []string
-	Length  int64
 }
 
 func NewLog() *Log {
@@ -15,7 +14,7 @@ func NewLog() *Log {
 }
 
 func (l *Log) OutputLogFile() {
-	if l.Length > 0 {
+	if len(l.Records) > 0 {
 		logFile, _ := os.Create("server/output/local_leetcode_logs.txt")
 		defer logFile.Close()
 
@@ -24,6 +23,5 @@ func (l *Log) OutputLogFile() {
 }
 
 func (l *Log) Append(message string) {
-	l.Length++
 	l.Records = append(l.Records, message)
 }
