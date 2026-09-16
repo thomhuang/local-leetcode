@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/thomhuang/local-leetcode/internal/question"
 	"github.com/thomhuang/local-leetcode/internal/solution"
 )
 
@@ -18,26 +17,16 @@ const (
 )
 
 func (app *App) GetAllQuestions() ([]byte, error) {
-	resp, err := http.Get(BaseUrl + "api/problems/all/")
+	body, err := app.do(http.MethodGet, BaseUrl+"api/problems/all/", nil, "")
 	if err != nil {
-		app.Log.Append(fmt.Sprintf("GetAllQuestions: could not download problems metadata: %s\n", err.Error()))
-		return []byte{}, err
+		return nil, fmt.Errorf("get all questions: %w", err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		app.Log.Append(fmt.Sprintf("GetAllQuestions: could not read problems metadata response body: %s\n", err.Error()))
-		return []byte{}, err
-	}
-
 	return body, nil
 }
 
 func (app *App) GetQuestion(slug string) ([]byte, error) {
-	if len(slug) <= 0 {
-		app.Log.Append("GetQuestion: title slug must not be empty")
-		return []byte{}, fmt.Errorf("slug must not be empty")
+	if len(slug) == 0 {
+		return nil, fmt.Errorf("get question: slug must not be empty")
 	}
 
 	query := map[string]interface{}{
@@ -47,27 +36,18 @@ func (app *App) GetQuestion(slug string) ([]byte, error) {
 		},
 		"query": `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId questionFrontendId title titleSlug content difficulty likes dislikes exampleTestcases codeSnippets { lang langSlug code } topicTags { name slug } } }`,
 	}
-	jsonQuery, _ := json.Marshal(query) // shouldn't error here ever ...
-	resp, err := http.Post(GraphQlUrl, "application/json", bytes.NewBuffer(jsonQuery))
+	jsonQuery, _ := json.Marshal(query)
+	body, err := app.do(http.MethodPost, GraphQlUrl, jsonQuery, "")
 	if err != nil {
-		app.Log.Append(fmt.Sprintf("GetQuestion: could not download problem info: %s\n", err.Error()))
-		return []byte{}, err
+		return nil, fmt.Errorf("get question %q: %w", slug, err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		app.Log.Append(fmt.Sprintf("GetQuestion: could not read problem info response body: %s\n", err.Error()))
-		return []byte{}, err
-	}
-
 	return body, nil
 }
 
 func (app *App) InterpretSolution(questionId int, typedCode string) ([]byte, error) {
-	ques := app.fetchQuestion(app.Questions[questionId].QuestionTitleSlug)
-	if ques == (question.Question{}) {
-		return nil, fmt.Errorf("question %d not found", questionId)
+	ques, err := app.fetchQuestion(app.Questions[questionId].QuestionTitleSlug)
+	if err != nil {
+		return nil, err
 	}
 
 	requestBody := solution.InterpretSolutionRequest{
@@ -77,68 +57,30 @@ func (app *App) InterpretSolution(questionId int, typedCode string) ([]byte, err
 		TypedCode:  typedCode,
 	}
 	jsonRequest, _ := json.Marshal(requestBody)
-	requestUrlPath := BaseUrl + "problems/" + ques.TitleSlug + "/interpret_solution/"
-	request, err := app.getRequestWithHeaders(http.MethodPost, requestUrlPath, jsonRequest)
+	requestUrl := BaseUrl + "problems/" + ques.TitleSlug + "/interpret_solution/"
+	body, err := app.do(http.MethodPost, requestUrl, jsonRequest, BaseUrl+"problems/"+ques.TitleSlug)
 	if err != nil {
-		app.Log.Append(fmt.Sprintf("InterpretSolution: could not create request: %s\n", err.Error()))
-		return []byte{}, err
+		return nil, fmt.Errorf("interpret solution: %w", err)
 	}
-	questionUrl := BaseUrl + "problems/" + ques.TitleSlug
-	request.Header.Set("Referer", questionUrl)
-
-	client := &http.Client{}
-	resp, err := client.Do(request)
-	if err != nil {
-		app.Log.Append(fmt.Sprintf("InterpretSolution: could not get user info data: %s\n", err.Error()))
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		app.Log.Append(fmt.Sprintf("InterpretSolution: could not read response body: %s\n", err.Error()))
-		return []byte{}, err
-	}
-
 	return body, nil
 }
 
 func (app *App) CheckSolution(interpretId, titleSlug string) ([]byte, error) {
 	if len(interpretId) == 0 {
-		app.Log.Append("CheckSolution: interpretId must not be empty")
-		return nil, fmt.Errorf("interpretId must not be empty")
+		return nil, fmt.Errorf("check solution: interpretId must not be empty")
 	}
 
-	requestPath := BaseUrl + "submissions/detail/" + interpretId + "/check/"
-	request, err := app.getRequestWithHeaders(http.MethodGet, requestPath, nil)
+	requestUrl := BaseUrl + "submissions/detail/" + interpretId + "/check/"
+	body, err := app.do(http.MethodGet, requestUrl, nil, BaseUrl+"problems/"+titleSlug)
 	if err != nil {
-		app.Log.Append(fmt.Sprintf("CheckSolution: could not create request: %s\n", err.Error()))
-		return []byte{}, err
+		return nil, fmt.Errorf("check solution: %w", err)
 	}
-	questionUrl := BaseUrl + "problems/" + titleSlug
-	request.Header.Set("Referer", questionUrl)
-
-	client := &http.Client{}
-	resp, err := client.Do(request)
-	if err != nil {
-		app.Log.Append(fmt.Sprintf("CheckSolution: could not get check solution for given interpretId: %s\n", err.Error()))
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		app.Log.Append(fmt.Sprintf("CheckSolution: could not read solution status response body: %s\n", err.Error()))
-		return []byte{}, err
-	}
-
 	return body, nil
 }
 
 func (app *App) GetUser() ([]byte, error) {
 	if len(app.UserAuth.AuthCookies) == 0 {
-		app.Log.Append("Authenticate first!")
-		return []byte{}, fmt.Errorf("user needs to be authenticated")
+		return nil, fmt.Errorf("get user: authenticate first")
 	}
 
 	query := map[string]interface{}{
@@ -147,46 +89,49 @@ func (app *App) GetUser() ([]byte, error) {
 		"query":         `query globalData {  userStatus { realName username } }`,
 	}
 	jsonQuery, _ := json.Marshal(query)
-	request, err := app.getRequestWithHeaders(http.MethodPost, GraphQlUrl, jsonQuery)
+	body, err := app.do(http.MethodPost, GraphQlUrl, jsonQuery, "")
 	if err != nil {
-		app.Log.Append(fmt.Sprintf("GetUser: could not create request: %s\n", err.Error()))
-		return []byte{}, err
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+	return body, nil
+}
+
+// do sends one request to LeetCode and returns the response body. It attaches
+// the saved cookies when present and fails on any non-2xx status.
+func (app *App) do(method, url string, payload []byte, referer string) ([]byte, error) {
+	var body io.Reader
+	if payload != nil {
+		body = bytes.NewReader(payload)
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(request)
+	request, err := http.NewRequest(method, url, body)
 	if err != nil {
-		app.Log.Append(fmt.Sprintf("GetUser: could not get user info data: %s\n", err.Error()))
+		return nil, err
+	}
+
+	request.Header.Set("Content-Type", "application/json; charset=utf-8")
+	if len(app.UserAuth.AuthCookies) > 0 {
+		request.Header.Set("Cookie", app.UserAuth.AuthCookies)
+		request.Header.Set("X-Csrftoken", app.UserAuth.CsrfToken)
+	}
+	if len(referer) > 0 {
+		request.Header.Set("Referer", referer)
+	}
+
+	resp, err := app.client.Do(request)
+	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		app.Log.Append(fmt.Sprintf("GetUser: could not read user metadata response body: %s\n", err.Error()))
-		return []byte{}, err
+		return nil, fmt.Errorf("read response body: %w", err)
 	}
 
-	return body, nil
-}
-
-func (app *App) getRequestWithHeaders(method, route string, req []byte) (*http.Request, error) {
-	var body io.Reader
-	if req == nil {
-		body = nil
-	} else {
-		body = bytes.NewBuffer(req)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("%s %s returned status %d", method, url, resp.StatusCode)
 	}
 
-	request, err := http.NewRequest(method, route, body)
-	if err != nil {
-		return nil, err
-	}
-
-	request.Header.Set("Cookie", app.UserAuth.AuthCookies)
-	request.Header.Set("X-Csrftoken", app.UserAuth.CsrfToken)
-	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	request.Header.Set("Access-Control-Allow-Origin", "*")
-
-	return request, nil
+	return data, nil
 }

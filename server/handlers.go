@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -11,91 +10,59 @@ import (
 	"github.com/thomhuang/local-leetcode/internal/user"
 )
 
-func (app *App) fetchQuestion(slug string) question.Question {
-	stream, err := app.GetQuestion(slug)
+// decode turns the (body, err) pair from an HTTP call into a typed response.
+func decode[T any](data []byte, err error) (T, error) {
+	var out T
 	if err != nil {
-		return question.Question{}
+		return out, err
 	}
-
-	var resp question.QuestionResponse
-	err = json.Unmarshal(stream, &resp)
-	if err != nil {
-		return question.Question{}
+	if err := json.Unmarshal(data, &out); err != nil {
+		return out, fmt.Errorf("decode response: %w", err)
 	}
-
-	return question.ToQuestion(resp)
+	return out, nil
 }
 
-func (app *App) fetchUser() user.UserStatusResponse {
-	stream, err := app.GetUser()
+func (app *App) fetchQuestion(slug string) (question.Question, error) {
+	resp, err := decode[question.QuestionResponse](app.GetQuestion(slug))
 	if err != nil {
-		return user.UserStatusResponse{}
+		return question.Question{}, err
 	}
-
-	var u user.UserStatusResponse
-	err = json.Unmarshal(stream, &u)
-	if err != nil {
-		return user.UserStatusResponse{}
-	}
-
-	return u
+	return question.ToQuestion(resp), nil
 }
 
-func (app *App) fetchInterpretation(questionId int, typedCode string) solution.InterpretSolutionResponse {
-	stream, err := app.InterpretSolution(questionId, typedCode)
-	if err != nil {
-		return solution.InterpretSolutionResponse{}
-	}
-
-	var interpretation solution.InterpretSolutionResponse
-	err = json.Unmarshal(stream, &interpretation)
-	if err != nil {
-		return solution.InterpretSolutionResponse{}
-	}
-
-	return interpretation
+func (app *App) fetchUser() (user.UserStatusResponse, error) {
+	return decode[user.UserStatusResponse](app.GetUser())
 }
 
-func (app *App) fetchCheckResult(interpretId, titleSlug string) solution.CheckSolutionResponse {
-	stream, err := app.CheckSolution(interpretId, titleSlug)
-	if err != nil {
-		return solution.CheckSolutionResponse{}
-	}
-
-	var submissionStatus solution.CheckSolutionResponse
-	err = json.Unmarshal(stream, &submissionStatus)
-	if err != nil {
-		return solution.CheckSolutionResponse{}
-	}
-
-	return submissionStatus
+func (app *App) fetchInterpretation(questionId int, typedCode string) (solution.InterpretSolutionResponse, error) {
+	return decode[solution.InterpretSolutionResponse](app.InterpretSolution(questionId, typedCode))
 }
 
-func (app *App) pollSolution(interpretId, titleSlug string) solution.CheckSolutionResponse {
+func (app *App) fetchCheckResult(interpretId, titleSlug string) (solution.CheckSolutionResponse, error) {
+	return decode[solution.CheckSolutionResponse](app.CheckSolution(interpretId, titleSlug))
+}
+
+// pollSolution asks LeetCode for the run result until the judge reports a
+// final state or pollTimeout passes.
+func (app *App) pollSolution(interpretId, titleSlug string) (solution.CheckSolutionResponse, error) {
 	if len(interpretId) == 0 {
-		return solution.CheckSolutionResponse{}
+		return solution.CheckSolutionResponse{}, fmt.Errorf("no interpret id returned; is your session still valid?")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	ticker := time.NewTicker(time.Second) // Poll every 1s
-	defer ticker.Stop()
-
-	var resp solution.CheckSolutionResponse
+	deadline := time.Now().Add(pollTimeout)
 	for {
-		select {
-		case <-ctx.Done():
-			return resp
-		case <-ticker.C:
-			if resp.State == solution.Started {
-				// Final call to get the data
-				fmt.Println("Submitted!")
-				return app.fetchCheckResult(interpretId, titleSlug)
-			} else {
-				fmt.Println("Pending...")
-				resp = app.fetchCheckResult(interpretId, titleSlug)
-			}
+		resp, err := app.fetchCheckResult(interpretId, titleSlug)
+		if err != nil {
+			return resp, err
 		}
+		if solution.IsFinal(resp.State) {
+			return resp, nil
+		}
+		if time.Now().After(deadline) {
+			return resp, fmt.Errorf("timed out after %s; last state %q", pollTimeout, resp.State)
+		}
+
+		fmt.Println("Pending...")
+		time.Sleep(pollInterval)
 	}
 }

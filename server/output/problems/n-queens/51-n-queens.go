@@ -1,75 +1,76 @@
 package n_queens
 
 /*
-We can do standard backtracking here, passing along our backtrack dfs the number of queens
-placed so far, as well as the board state for that given path.
-
-We'll have to make a validate method to see if a placed queen is in threat of another existing queen, etc.
+We place one queen per row with backtracking. For each row we try every column.
+isValid checks the column above and both upper diagonals for an existing queen.
+When a placement is valid, we place the queen, recurse to the next row, then remove it.
+When row == n, every row has a queen, so we copy the board into the result.
 */
 func solveNQueens(n int) [][]string {
 	res := make([][]string, 0)
-
-	// we initialize our board with no queens placed at all, i.e. a '.'
-	board := make([][]rune, n)
-	for r := range n { //O(n^2)
-		board[r] = make([]rune, n)
-		for c := range n {
-			board[r][c] = '.'
+	if n == 0 {
+		return res
+	}
+	board := make([][]byte, n)
+	for i := range n {
+		row := make([]byte, n)
+		for j := range n {
+			row[j] = '.'
 		}
+
+		board[i] = row
 	}
 
-	// Note that for a given queen in a row, we cannot have a queen within the same row
-	// so what we can do is move down each row, and place a queen and check the PREVIOUS
-	// rows to determine if it's a valid position to place the queen.
-	var backtrack func(row int, path [][]rune) // O(n)
-	backtrack = func(row int, path [][]rune) {
-		if row == n { // if we've gone past the rows in the board, then we know we've placed n queens
+	var backtrack func(row int)
+	backtrack = func(row int) {
+		if row == n {
 			validBoard := make([]string, n)
-			for i, row := range path { // O(n)
-				validBoard[i] = string(row)
+			for r := range board {
+				validBoard[r] = string(board[r])
 			}
 
 			res = append(res, validBoard)
 			return
 		}
 
-		// We know which row we're on from the passed parameter,
-		// so we'll have to check if each column is valid
-		for c := range n { // O(n)
-			if isValid(row, c, path) { // O(n - row)
-				// add the queen if valid
-				path[row][c] = 'Q'
-				// continue to next row
-				backtrack(row+1, path)
-				// revert path change for next column attempt
-				path[row][c] = '.'
+		for c := 0; c < len(board[0]); c++ {
+			if !isValid(row, c, board) {
+				continue
 			}
+
+			board[row][c] = 'Q'
+			backtrack(row + 1)
+			board[row][c] = '.'
 		}
 	}
 
-	backtrack(0, board)
+	backtrack(0)
 
 	return res
 }
 
-// we check any column, and diagonals above the (r,c) position ...
-func isValid(row, col int, path [][]rune) bool { // O(n) worse case
-	for r := 0; r < row; r++ {
-		if path[r][col] == 'Q' {
+func isValid(row, col int, board [][]byte) bool {
+	// first we need to check every other row with the given column to see if
+	// there's a conflicting queen
+
+	for r := range row {
+		if board[r][col] == 'Q' {
 			return false
 		}
 	}
 
-	// upper left diagonal
-	for r, c := row, col; r >= 0 && c >= 0; r, c = r-1, c-1 {
-		if path[r][c] == 'Q' {
+	// now we need to check each upper diagonal, left/right from the position
+
+	// this first checks the upper right diagonal
+	for i, j := row, col; i >= 0 && j < len(board); i, j = i-1, j+1 {
+		if board[i][j] == 'Q' {
 			return false
 		}
 	}
 
-	// upper right diagonal
-	for r, c := row, col; r >= 0 && c >= 0 && c < len(path); r, c = r-1, c+1 {
-		if path[r][c] == 'Q' {
+	// now this checks the upper left diagonal
+	for i, j := row, col; i >= 0 && j >= 0; i, j = i-1, j-1 {
+		if board[i][j] == 'Q' {
 			return false
 		}
 	}

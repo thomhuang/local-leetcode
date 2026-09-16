@@ -55,3 +55,8 @@ type CheckSolutionResponse struct {
 	SubmissionId           string   `json:"submission_id"`
 	StatusMessage          string   `json:"status_msg"`
 }
+
+// IsFinal reports whether the judge has finished with a run.
+func IsFinal(state string) bool {
+	return state != Pending && state != Started
+}

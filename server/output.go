@@ -22,16 +22,16 @@ func SaveMarkdownContent(ques question.Question) error {
 	sb.WriteString(ques.Content)
 
 	dir := problemsDir + "/" + ques.TitleSlug + "/"
-	err := os.MkdirAll(dir, os.ModeDir)
+	err := os.MkdirAll(dir, dirPerm)
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(dir+ques.TitleSlug+".md", []byte(sb.String()), os.ModePerm)
+	err = os.WriteFile(dir+ques.TitleSlug+".md", []byte(sb.String()), filePerm)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(dir+ques.FrontEndQuestionId+"-"+ques.TitleSlug+".go", []byte(ques.CodeSnippet), os.ModePerm)
+	err = os.WriteFile(dir+ques.FrontEndQuestionId+"-"+ques.TitleSlug+".go", []byte(ques.CodeSnippet), filePerm)
 	if err != nil {
 		return err
 	}

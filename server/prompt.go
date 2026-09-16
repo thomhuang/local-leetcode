@@ -44,8 +44,6 @@ func (app *App) Prompt() {
 			panic("unhandled default case")
 		}
 	}
-
-	app.Log.OutputLogFile()
 }
 
 func (app *App) promptForAction(scanner *bufio.Scanner) UserAction {
@@ -90,9 +88,15 @@ func (app *App) promptForAction(scanner *bufio.Scanner) UserAction {
 func (app *App) handleAddQuestion(scanner *bufio.Scanner) {
 	id := app.promptForQuestionID(scanner, "What problem number are you interested in?")
 
-	err := SaveMarkdownContent(app.fetchQuestion(app.Questions[id].QuestionTitleSlug))
+	ques, err := app.fetchQuestion(app.Questions[id].QuestionTitleSlug)
 	if err != nil {
-		app.Log.Append("Failed to save question content! " + err.Error())
+		app.fail("Failed to fetch question", err)
+		return
+	}
+
+	err = SaveMarkdownContent(ques)
+	if err != nil {
+		app.fail("Failed to save question content", err)
 		return
 	}
 }
@@ -102,13 +106,18 @@ func (app *App) handleAuthentication(scanner *bufio.Scanner) {
 		return
 	}
 
-	cookies := app.promptForCookies(scanner)
-	err := app.SaveAuthentication(cookies)
+	session, csrfToken := app.promptForCookies(scanner)
+	err := app.SaveAuthentication(session, csrfToken)
 	if err != nil {
-		app.Log.Append("Failed to save authentication cookies! " + err.Error())
+		app.fail("Failed to save authentication cookies", err)
+		return
 	}
 
-	user := app.fetchUser()
+	user, err := app.fetchUser()
+	if err != nil {
+		app.fail("Cookies saved, but LeetCode rejected them", err)
+		return
+	}
 	fmt.Println(user.Data.UserStatus.FullName)
 	fmt.Println(user.Data.UserStatus.Username)
 }
@@ -121,21 +130,53 @@ func (app *App) handleTestCode(scanner *bufio.Scanner) {
 
 	fileStream, err := os.ReadFile(filePath)
 	if err != nil {
-		app.Log.Append("Failed to read problem file! " + err.Error())
+		app.fail("Failed to read problem file", err)
 		return
 	}
 
 	packageName := strings.ReplaceAll(titleSlug, "-", "_")
-	userSubmission := strings.ReplaceAll(
-		string(fileStream),
-		"package "+packageName+"\n\n",
-		"")
+	userSubmission := prepareSubmission(string(fileStream), packageName)
 
-	pendingSolution := app.fetchInterpretation(id, userSubmission)
-	interpretedId := pendingSolution.InterpretId
+	pendingSolution, err := app.fetchInterpretation(id, userSubmission)
+	if err != nil {
+		app.fail("Failed to submit code for a test run", err)
+		return
+	}
 
-	result := app.pollSolution(interpretedId, titleSlug)
+	result, err := app.pollSolution(pendingSolution.InterpretId, titleSlug)
+	if err != nil {
+		app.fail("Failed to get the run result", err)
+		return
+	}
 	fmt.Println(OutputQuestionResults(result))
+}
+
+func prepareSubmission(source, packageName string) string {
+	packageLine, code, found := strings.Cut(source, "\n")
+	packageLine = strings.TrimSpace(strings.TrimPrefix(packageLine, "\uFEFF"))
+	if !found || packageLine != "package "+packageName {
+		return source
+	}
+
+	return strings.TrimLeft(code, "\r\n")
+}
+
+// parseCookies pulls the session and CSRF token out of a raw Cookie header.
+// The last value is false when either cookie is missing.
+func parseCookies(raw string) (session, csrfToken string, ok bool) {
+	for _, pair := range strings.Split(raw, ";") {
+		name, value, found := strings.Cut(strings.TrimSpace(pair), "=")
+		if !found {
+			continue
+		}
+		switch name {
+		case "LEETCODE_SESSION":
+			session = value
+		case "csrftoken":
+			csrfToken = value
+		}
+	}
+	return session, csrfToken, session != "" && csrfToken != ""
 }
 
 func (app *App) promptForQuestionID(scanner *bufio.Scanner, prompt string) int {
@@ -147,6 +188,9 @@ func (app *App) promptForQuestionID(scanner *bufio.Scanner, prompt string) int {
 			convertedId, err := strconv.Atoi(input)
 			if err != nil {
 				return false, fmt.Sprintf("Invalid input for problem number, please input an integer!: %s", input)
+			}
+			if _, exists := app.Questions[convertedId]; !exists {
+				return false, fmt.Sprintf("Problem %d was not found in the problem list!", convertedId)
 			}
 
 			id = convertedId
@@ -167,33 +211,20 @@ func (app *App) shouldSkipAuthentication(scanner *bufio.Scanner) bool {
 	return false
 }
 
-func (app *App) promptForCookies(scanner *bufio.Scanner) map[string]string {
-	cookies := make(map[string]string)
+func (app *App) promptForCookies(scanner *bufio.Scanner) (session, csrfToken string) {
 	app.promptWithValidation(
 		scanner,
 		"Please input your authenticated request cookies from a https://leetcode.com/graphql call!",
 		func(input string) (bool, string) {
-			rawCookies := input
-			pairs := strings.Split(rawCookies, ";")
-
-			for _, pair := range pairs {
-				curr := strings.Split(strings.TrimSpace(pair), "=")
-				if curr[0] == "csrftoken" {
-					cookies[curr[0]] = curr[1]
-					app.UserAuth.CsrfToken = curr[1]
-				}
-				if curr[0] == "LEETCODE_SESSION" {
-					cookies[curr[0]] = curr[1]
-				}
-			}
-
-			if len(cookies) != 2 {
-				return false, "Invalid cookie value, please try again!"
+			var ok bool
+			session, csrfToken, ok = parseCookies(input)
+			if !ok {
+				return false, "Cookies must contain LEETCODE_SESSION and csrftoken, please try again!"
 			}
 			return true, ""
 		},
 	)
-	return cookies
+	return session, csrfToken
 }
 
 func (app *App) promptYesNo(scanner *bufio.Scanner, question string) bool {
