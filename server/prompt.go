@@ -35,8 +35,7 @@ func (app *App) Prompt() {
 		case TestCode:
 			app.handleTestCode(scanner)
 		case SubmitCode:
-			// TODO: Implement submit code functionality
-			fmt.Println("Submit code functionality not yet implemented")
+			app.handleSubmitCode(scanner)
 		case Exit:
 			fmt.Println("Exiting ...")
 			exit = true
@@ -125,17 +124,10 @@ func (app *App) handleAuthentication(scanner *bufio.Scanner) {
 func (app *App) handleTestCode(scanner *bufio.Scanner) {
 	id := app.promptForQuestionID(scanner, "What problem number would you like to run? Please make sure it exists under /output/problems/{titleSlug}")
 
-	titleSlug := app.Questions[id].QuestionTitleSlug
-	filePath := problemsDir + "/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
-
-	fileStream, err := os.ReadFile(filePath)
-	if err != nil {
-		app.fail("Failed to read problem file", err)
+	userSubmission, titleSlug, ok := app.loadUserCode(id)
+	if !ok {
 		return
 	}
-
-	packageName := strings.ReplaceAll(titleSlug, "-", "_")
-	userSubmission := prepareSubmission(string(fileStream), packageName)
 
 	pendingSolution, err := app.fetchInterpretation(id, userSubmission)
 	if err != nil {
@@ -149,6 +141,46 @@ func (app *App) handleTestCode(scanner *bufio.Scanner) {
 		return
 	}
 	fmt.Println(OutputQuestionResults(result))
+}
+
+func (app *App) handleSubmitCode(scanner *bufio.Scanner) {
+	id := app.promptForQuestionID(scanner, "What problem number would you like to submit? Please make sure it exists under /output/problems/{titleSlug}")
+
+	userSubmission, titleSlug, ok := app.loadUserCode(id)
+	if !ok {
+		return
+	}
+
+	pendingSolution, err := app.fetchSubmission(id, userSubmission)
+	if err != nil {
+		app.fail("Failed to submit code for a submission", err)
+		return
+	}
+
+	submissionId := strconv.FormatInt(pendingSolution.SubmissionId, 10)
+
+	result, err := app.pollSolution(submissionId, titleSlug)
+	if err != nil {
+		app.fail("Failed to get the submission result", err)
+		return
+	}
+	fmt.Println(OutputSubmissionResults(result))
+}
+
+func (app *App) loadUserCode(id int) (string, string, bool) {
+	titleSlug := app.Questions[id].QuestionTitleSlug
+	filePath := problemsDir + "/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
+
+	fileStream, err := os.ReadFile(filePath)
+	if err != nil {
+		app.fail("Failed to read problem file", err)
+		return "", "", false
+	}
+
+	packageName := strings.ReplaceAll(titleSlug, "-", "_")
+	userSubmission := prepareSubmission(string(fileStream), packageName)
+
+	return userSubmission, titleSlug, true
 }
 
 func prepareSubmission(source, packageName string) string {

@@ -38,6 +38,10 @@ func (app *App) fetchInterpretation(questionId int, typedCode string) (solution.
 	return decode[solution.InterpretSolutionResponse](app.InterpretSolution(questionId, typedCode))
 }
 
+func (app *App) fetchSubmission(questionId int, typedCode string) (solution.SubmitSolutionResponse, error) {
+	return decode[solution.SubmitSolutionResponse](app.SubmitSolution(questionId, typedCode))
+}
+
 func (app *App) fetchCheckResult(interpretId, titleSlug string) (solution.CheckSolutionResponse, error) {
 	return decode[solution.CheckSolutionResponse](app.CheckSolution(interpretId, titleSlug))
 }

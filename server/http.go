@@ -65,6 +65,26 @@ func (app *App) InterpretSolution(questionId int, typedCode string) ([]byte, err
 	return body, nil
 }
 
+func (app *App) SubmitSolution(questionId int, typedCode string) ([]byte, error) {
+	ques, err := app.fetchQuestion(app.Questions[questionId].QuestionTitleSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	requestBody := solution.SubmitSolutionRequest{
+		Language:   "golang",
+		QuestionId: strconv.Itoa(app.Questions[questionId].QuestionId),
+		TypedCode:  typedCode,
+	}
+	jsonRequest, _ := json.Marshal(requestBody)
+	requestUrl := BaseUrl + "problems/" + ques.TitleSlug + "/submit/"
+	body, err := app.do(http.MethodPost, requestUrl, jsonRequest, BaseUrl+"problems/"+ques.TitleSlug)
+	if err != nil {
+		return nil, fmt.Errorf("submit solution: %w", err)
+	}
+	return body, nil
+}
+
 func (app *App) CheckSolution(interpretId, titleSlug string) ([]byte, error) {
 	if len(interpretId) == 0 {
 		return nil, fmt.Errorf("check solution: interpretId must not be empty")
