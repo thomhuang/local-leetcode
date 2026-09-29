@@ -237,6 +237,8 @@ func (m browseModel) handleDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.message = ""
 			return m, m.importCmd()
 		}
+	case "o":
+		m.openFile()
 	case "m":
 		m.toggleAccepted()
 	}
@@ -359,6 +361,20 @@ func (m *browseModel) nextTodo() {
 			return
 		}
 	}
+}
+
+// openFile launches the problem's solution file in the default application.
+func (m *browseModel) openFile() {
+	starter := starterFilePath(problemsDir, m.rows[m.detailIndex].problem)
+	if starter == "" {
+		m.message = "No .go file yet - press i to import."
+		return
+	}
+	if err := openInDefaultApp(starter); err != nil {
+		m.message = "Unable to open file: " + err.Error()
+		return
+	}
+	m.message = "Opened " + starter
 }
 
 func (m *browseModel) toggleAccepted() {
@@ -520,7 +536,7 @@ func (m browseModel) detailView() string {
 	if row.state == stateAccepted {
 		mark = "m clear accepted"
 	}
-	b.WriteString(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "i import", mark, "esc back"}, " · ")))
+	b.WriteString(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "o open file", "i import", mark, "esc back"}, " · ")))
 
 	if m.busy {
 		b.WriteString("\n\n" + dimStyle.Render("working..."))

@@ -57,8 +57,8 @@ function that must return a value. Replace the panic with your solution.
 
 The **Browse problems** action opens a full-screen checklist. Move with the
 arrow keys, `enter` to open a problem, and `q`/`esc` to go back to the menu.
-Inside a problem you can test, submit, read the statement, import it, or mark
-it accepted.
+Inside a problem you can test, submit, read the statement, open its `.go` file
+in your default editor (`o`), import it, or mark it accepted.
 
 Each problem shows a status:
 
