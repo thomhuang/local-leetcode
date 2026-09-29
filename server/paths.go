@@ -6,6 +6,7 @@ const (
 	outputDir       = "server/output"
 	problemsDir     = outputDir + "/problems"
 	problemSetsDir  = outputDir + "/ProblemSets"
+	progressFile    = outputDir + "/progress.json"
 	authDir         = outputDir + "/auth"
 	authFile        = authDir + "/leetcode_auth.json"
 	allProblemsFile = outputDir + "/all_problems.json"

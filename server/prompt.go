@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/thomhuang/local-leetcode/internal/question"
 )
 
 type UserAction int
@@ -19,6 +17,7 @@ const (
 	Authenticate
 	AddQuestion
 	AddProblemSet
+	BrowseProblems
 	TestCode
 	SubmitCode
 	Exit
@@ -35,6 +34,8 @@ func (app *App) Prompt() {
 			app.handleAddQuestion(scanner)
 		case AddProblemSet:
 			app.handleAddProblemSet(scanner)
+		case BrowseProblems:
+			app.handleBrowseProblems(scanner)
 		case Authenticate:
 			app.handleAuthentication(scanner)
 		case TestCode:
@@ -60,7 +61,8 @@ func (app *App) promptForAction(scanner *bufio.Scanner) UserAction {
 	sb.WriteString("(3) Authenticate user\n")
 	sb.WriteString("(4) Test code\n")
 	sb.WriteString("(5) Submit code\n")
-	sb.WriteString("(6) Exit\n")
+	sb.WriteString("(6) Browse problems\n")
+	sb.WriteString("(7) Exit\n")
 	sb.WriteString("--------------------------------------------------------------------")
 
 	app.promptWithValidation(
@@ -81,6 +83,8 @@ func (app *App) promptForAction(scanner *bufio.Scanner) UserAction {
 			case "5":
 				action = SubmitCode
 			case "6":
+				action = BrowseProblems
+			case "7":
 				action = Exit
 			default:
 				action = Invalid
@@ -111,6 +115,16 @@ func (app *App) handleAddQuestion(scanner *bufio.Scanner) {
 func (app *App) handleAddProblemSet(scanner *bufio.Scanner) {
 	name := app.promptForProblemSet(scanner)
 	app.importSetAndReport(name)
+}
+
+func (app *App) handleBrowseProblems(scanner *bufio.Scanner) {
+	name := app.promptForProblemSet(scanner)
+	if name == "" {
+		return
+	}
+	if err := app.BrowseProblems(name); err != nil {
+		app.fail("Failed to browse problems", err)
+	}
 }
 
 func (app *App) promptForProblemSet(scanner *bufio.Scanner) string {
@@ -162,63 +176,23 @@ func (app *App) handleAuthentication(scanner *bufio.Scanner) {
 func (app *App) handleTestCode(scanner *bufio.Scanner) {
 	id := app.promptForQuestionID(scanner, "What problem number would you like to run? Please make sure it exists under /output/problems/{titleSlug}")
 
-	userSubmission, titleSlug, ok := app.loadUserCode(id)
-	if !ok {
-		return
-	}
-
-	pendingSolution, err := app.fetchInterpretation(id, userSubmission)
+	result, err := app.TestProblem(id)
 	if err != nil {
-		app.fail("Failed to submit code for a test run", err)
+		app.fail("Failed to test code", err)
 		return
 	}
-
-	result, err := app.pollSolution(pendingSolution.InterpretId, titleSlug)
-	if err != nil {
-		app.fail("Failed to get the run result", err)
-		return
-	}
-	fmt.Println(OutputQuestionResults(result))
+	fmt.Println(result)
 }
 
 func (app *App) handleSubmitCode(scanner *bufio.Scanner) {
 	id := app.promptForQuestionID(scanner, "What problem number would you like to submit? Please make sure it exists under /output/problems/{titleSlug}")
 
-	userSubmission, titleSlug, ok := app.loadUserCode(id)
-	if !ok {
+	result, err := app.SubmitProblem(id)
+	if err != nil {
+		app.fail("Failed to submit code", err)
 		return
 	}
-
-	pendingSolution, err := app.fetchSubmission(id, userSubmission)
-	if err != nil {
-		app.fail("Failed to submit code for a submission", err)
-		return
-	}
-
-	submissionId := strconv.FormatInt(pendingSolution.SubmissionId, 10)
-
-	result, err := app.pollSolution(submissionId, titleSlug)
-	if err != nil {
-		app.fail("Failed to get the submission result", err)
-		return
-	}
-	fmt.Println(OutputSubmissionResults(result))
-}
-
-func (app *App) loadUserCode(id int) (string, string, bool) {
-	titleSlug := app.Questions[id].QuestionTitleSlug
-	filePath := problemsDir + "/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
-
-	fileStream, err := os.ReadFile(filePath)
-	if err != nil {
-		app.fail("Failed to read problem file", err)
-		return "", "", false
-	}
-
-	packageName := question.PackageName(titleSlug)
-	userSubmission := prepareSubmission(string(fileStream), packageName)
-
-	return userSubmission, titleSlug, true
+	fmt.Println(result)
 }
 
 func prepareSubmission(source, packageName string) string {

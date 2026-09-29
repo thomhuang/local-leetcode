@@ -66,34 +66,46 @@ func (app *App) ImportProblemSet(set question.ProblemSet) ProblemSetImportSummar
 	var summary ProblemSetImportSummary
 
 	for _, problem := range set.Problems() {
-		if problemExists(problem.Slug) {
+		imported, premium, err := app.ImportProblem(problem)
+		if err != nil {
+			app.fail(fmt.Sprintf("Failed to import %s (%s)", problem.Title, problem.Slug), err)
+			summary.Failed = append(summary.Failed, problem)
+			continue
+		}
+		if !imported {
 			summary.Skipped++
 			continue
 		}
 
-		ques, err := app.fetchQuestionWithRetry(problem.Slug)
-		if err != nil {
-			app.fail(fmt.Sprintf("Failed to fetch %s (%s)", problem.Title, problem.Slug), err)
-			summary.Failed = append(summary.Failed, problem)
-			continue
-		}
-
-		if err := SaveMarkdownContent(ques); err != nil {
-			app.fail(fmt.Sprintf("Failed to save %s (%s)", problem.Title, problem.Slug), err)
-			summary.Failed = append(summary.Failed, problem)
-			continue
-		}
-
-		if hasProblemContent(ques) {
-			summary.Added++
-		} else {
+		if premium {
 			summary.Premium++
+		} else {
+			summary.Added++
 		}
-
 		time.Sleep(importDelay)
 	}
 
 	return summary
+}
+
+// ImportProblem fetches and saves a single problem unless it already exists. It
+// reports whether the problem was imported and whether it is a premium
+// placeholder (no statement or starter code).
+func (app *App) ImportProblem(problem question.ProblemSetProblem) (imported, premium bool, err error) {
+	if problemExists(problem.Slug) {
+		return false, false, nil
+	}
+
+	ques, err := app.fetchQuestionWithRetry(problem.Slug)
+	if err != nil {
+		return false, false, err
+	}
+
+	if err := SaveMarkdownContent(ques); err != nil {
+		return false, false, err
+	}
+
+	return true, !hasProblemContent(ques), nil
 }
 
 // fetchQuestionWithRetry retries transient failures a few times with a growing
