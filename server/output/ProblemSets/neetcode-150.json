@@ -1,5 +1,5 @@
 {
-    "name":  "NeetCode 150",
+    "name":  "NeetCode 150 + Additional Practice",
     "slug":  "neetcode-150",
     "source":  "https://neetcode.io/practice",
     "categories":  [
@@ -1138,6 +1138,81 @@
                                                 "id":  7,
                                                 "title":  "Reverse Integer",
                                                 "slug":  "reverse-integer",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Additional Practice",
+                           "problems":  [
+                                            {
+                                                "id":  47,
+                                                "title":  "Permutations II",
+                                                "slug":  "permutations-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  77,
+                                                "title":  "Combinations",
+                                                "slug":  "combinations",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  93,
+                                                "title":  "Restore IP Addresses",
+                                                "slug":  "restore-ip-addresses",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  113,
+                                                "title":  "Path Sum II",
+                                                "slug":  "path-sum-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  216,
+                                                "title":  "Combination Sum III",
+                                                "slug":  "combination-sum-iii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  399,
+                                                "title":  "Evaluate Division",
+                                                "slug":  "evaluate-division",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  542,
+                                                "title":  "01 Matrix",
+                                                "slug":  "01-matrix",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  547,
+                                                "title":  "Number of Provinces",
+                                                "slug":  "number-of-provinces",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  721,
+                                                "title":  "Accounts Merge",
+                                                "slug":  "accounts-merge",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  1334,
+                                                "title":  "Find the City With the Smallest Number of Neighbors at a Threshold Distance",
+                                                "slug":  "find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance",
                                                 "difficulty":  "Medium",
                                                 "premium":  false
                                             }
