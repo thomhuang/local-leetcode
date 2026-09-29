@@ -29,6 +29,7 @@ type QuestionInfo struct {
 	TitleSlug          string        `json:"titleSlug"`
 	Content            string        `json:"content"`
 	Difficulty         string        `json:"difficulty"`
+	IsPaidOnly         bool          `json:"isPaidOnly"`
 	ExampleTestCases   string        `json:"exampleTestcases"`
 	CodeSnippets       []CodeSnippet `json:"codeSnippets"`
 }
@@ -46,6 +47,7 @@ type Question struct {
 	TitleSlug          string
 	Content            string
 	Difficulty         string
+	IsPaidOnly         bool
 	Language           string
 	CodeSnippet        string
 	ExampleTestCases   string

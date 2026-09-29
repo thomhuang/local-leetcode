@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -18,6 +19,9 @@ type App struct {
 }
 
 func main() {
+	importSet := flag.String("import-set", "", "import every problem from the named set under server/output/ProblemSets and exit")
+	flag.Parse()
+
 	if err := os.MkdirAll(outputDir, dirPerm); err != nil {
 		fmt.Printf("Unable to create %s: %s\n", outputDir, err)
 		os.Exit(1)
@@ -31,6 +35,11 @@ func main() {
 	err := app.ImportAuthentication()
 	if err != nil {
 		app.fail("Unable to import existing authentication", err)
+	}
+
+	if *importSet != "" {
+		app.importSetAndReport(*importSet)
+		return
 	}
 
 	app.Prompt()

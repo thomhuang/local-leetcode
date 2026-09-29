@@ -34,7 +34,7 @@ func (app *App) GetQuestion(slug string) ([]byte, error) {
 		"variables": map[string]interface{}{
 			"titleSlug": slug,
 		},
-		"query": `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId questionFrontendId title titleSlug content difficulty likes dislikes exampleTestcases codeSnippets { lang langSlug code } topicTags { name slug } } }`,
+		"query": `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId questionFrontendId title titleSlug content difficulty isPaidOnly likes dislikes exampleTestcases codeSnippets { lang langSlug code } topicTags { name slug } } }`,
 	}
 	jsonQuery, _ := json.Marshal(query)
 	body, err := app.do(http.MethodPost, GraphQlUrl, jsonQuery, "")

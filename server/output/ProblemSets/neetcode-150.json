@@ -1,0 +1,1147 @@
+{
+    "name":  "NeetCode 150",
+    "slug":  "neetcode-150",
+    "source":  "https://neetcode.io/practice",
+    "categories":  [
+                       {
+                           "name":  "Arrays & Hashing",
+                           "problems":  [
+                                            {
+                                                "id":  217,
+                                                "title":  "Contains Duplicate",
+                                                "slug":  "contains-duplicate",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  242,
+                                                "title":  "Valid Anagram",
+                                                "slug":  "valid-anagram",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  1,
+                                                "title":  "Two Sum",
+                                                "slug":  "two-sum",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  49,
+                                                "title":  "Group Anagrams",
+                                                "slug":  "group-anagrams",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  347,
+                                                "title":  "Top K Frequent Elements",
+                                                "slug":  "top-k-frequent-elements",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  271,
+                                                "title":  "Encode and Decode Strings",
+                                                "slug":  "encode-and-decode-strings",
+                                                "difficulty":  "Medium",
+                                                "premium":  true
+                                            },
+                                            {
+                                                "id":  238,
+                                                "title":  "Product of Array Except Self",
+                                                "slug":  "product-of-array-except-self",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  36,
+                                                "title":  "Valid Sudoku",
+                                                "slug":  "valid-sudoku",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  128,
+                                                "title":  "Longest Consecutive Sequence",
+                                                "slug":  "longest-consecutive-sequence",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Two Pointers",
+                           "problems":  [
+                                            {
+                                                "id":  125,
+                                                "title":  "Valid Palindrome",
+                                                "slug":  "valid-palindrome",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  167,
+                                                "title":  "Two Sum II Input Array Is Sorted",
+                                                "slug":  "two-sum-ii-input-array-is-sorted",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  15,
+                                                "title":  "3Sum",
+                                                "slug":  "3sum",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  11,
+                                                "title":  "Container With Most Water",
+                                                "slug":  "container-with-most-water",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  42,
+                                                "title":  "Trapping Rain Water",
+                                                "slug":  "trapping-rain-water",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Sliding Window",
+                           "problems":  [
+                                            {
+                                                "id":  121,
+                                                "title":  "Best Time to Buy And Sell Stock",
+                                                "slug":  "best-time-to-buy-and-sell-stock",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  3,
+                                                "title":  "Longest Substring Without Repeating Characters",
+                                                "slug":  "longest-substring-without-repeating-characters",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  424,
+                                                "title":  "Longest Repeating Character Replacement",
+                                                "slug":  "longest-repeating-character-replacement",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  567,
+                                                "title":  "Permutation In String",
+                                                "slug":  "permutation-in-string",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  76,
+                                                "title":  "Minimum Window Substring",
+                                                "slug":  "minimum-window-substring",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  239,
+                                                "title":  "Sliding Window Maximum",
+                                                "slug":  "sliding-window-maximum",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Stack",
+                           "problems":  [
+                                            {
+                                                "id":  20,
+                                                "title":  "Valid Parentheses",
+                                                "slug":  "valid-parentheses",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  155,
+                                                "title":  "Min Stack",
+                                                "slug":  "min-stack",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  150,
+                                                "title":  "Evaluate Reverse Polish Notation",
+                                                "slug":  "evaluate-reverse-polish-notation",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  739,
+                                                "title":  "Daily Temperatures",
+                                                "slug":  "daily-temperatures",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  853,
+                                                "title":  "Car Fleet",
+                                                "slug":  "car-fleet",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  84,
+                                                "title":  "Largest Rectangle In Histogram",
+                                                "slug":  "largest-rectangle-in-histogram",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Binary Search",
+                           "problems":  [
+                                            {
+                                                "id":  704,
+                                                "title":  "Binary Search",
+                                                "slug":  "binary-search",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  74,
+                                                "title":  "Search a 2D Matrix",
+                                                "slug":  "search-a-2d-matrix",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  875,
+                                                "title":  "Koko Eating Bananas",
+                                                "slug":  "koko-eating-bananas",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  153,
+                                                "title":  "Find Minimum In Rotated Sorted Array",
+                                                "slug":  "find-minimum-in-rotated-sorted-array",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  33,
+                                                "title":  "Search In Rotated Sorted Array",
+                                                "slug":  "search-in-rotated-sorted-array",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  981,
+                                                "title":  "Time Based Key Value Store",
+                                                "slug":  "time-based-key-value-store",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  4,
+                                                "title":  "Median of Two Sorted Arrays",
+                                                "slug":  "median-of-two-sorted-arrays",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Linked List",
+                           "problems":  [
+                                            {
+                                                "id":  206,
+                                                "title":  "Reverse Linked List",
+                                                "slug":  "reverse-linked-list",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  21,
+                                                "title":  "Merge Two Sorted Lists",
+                                                "slug":  "merge-two-sorted-lists",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  141,
+                                                "title":  "Linked List Cycle",
+                                                "slug":  "linked-list-cycle",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  143,
+                                                "title":  "Reorder List",
+                                                "slug":  "reorder-list",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  19,
+                                                "title":  "Remove Nth Node From End of List",
+                                                "slug":  "remove-nth-node-from-end-of-list",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  138,
+                                                "title":  "Copy List With Random Pointer",
+                                                "slug":  "copy-list-with-random-pointer",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  2,
+                                                "title":  "Add Two Numbers",
+                                                "slug":  "add-two-numbers",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  287,
+                                                "title":  "Find The Duplicate Number",
+                                                "slug":  "find-the-duplicate-number",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  146,
+                                                "title":  "LRU Cache",
+                                                "slug":  "lru-cache",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  23,
+                                                "title":  "Merge K Sorted Lists",
+                                                "slug":  "merge-k-sorted-lists",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  25,
+                                                "title":  "Reverse Nodes In K Group",
+                                                "slug":  "reverse-nodes-in-k-group",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Trees",
+                           "problems":  [
+                                            {
+                                                "id":  226,
+                                                "title":  "Invert Binary Tree",
+                                                "slug":  "invert-binary-tree",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  104,
+                                                "title":  "Maximum Depth of Binary Tree",
+                                                "slug":  "maximum-depth-of-binary-tree",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  543,
+                                                "title":  "Diameter of Binary Tree",
+                                                "slug":  "diameter-of-binary-tree",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  110,
+                                                "title":  "Balanced Binary Tree",
+                                                "slug":  "balanced-binary-tree",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  100,
+                                                "title":  "Same Tree",
+                                                "slug":  "same-tree",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  572,
+                                                "title":  "Subtree of Another Tree",
+                                                "slug":  "subtree-of-another-tree",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  235,
+                                                "title":  "Lowest Common Ancestor of a Binary Search Tree",
+                                                "slug":  "lowest-common-ancestor-of-a-binary-search-tree",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  102,
+                                                "title":  "Binary Tree Level Order Traversal",
+                                                "slug":  "binary-tree-level-order-traversal",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  199,
+                                                "title":  "Binary Tree Right Side View",
+                                                "slug":  "binary-tree-right-side-view",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  1448,
+                                                "title":  "Count Good Nodes In Binary Tree",
+                                                "slug":  "count-good-nodes-in-binary-tree",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  98,
+                                                "title":  "Validate Binary Search Tree",
+                                                "slug":  "validate-binary-search-tree",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  230,
+                                                "title":  "Kth Smallest Element In a Bst",
+                                                "slug":  "kth-smallest-element-in-a-bst",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  105,
+                                                "title":  "Construct Binary Tree From Preorder And Inorder Traversal",
+                                                "slug":  "construct-binary-tree-from-preorder-and-inorder-traversal",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  124,
+                                                "title":  "Binary Tree Maximum Path Sum",
+                                                "slug":  "binary-tree-maximum-path-sum",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  297,
+                                                "title":  "Serialize And Deserialize Binary Tree",
+                                                "slug":  "serialize-and-deserialize-binary-tree",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Heap / Priority Queue",
+                           "problems":  [
+                                            {
+                                                "id":  703,
+                                                "title":  "Kth Largest Element In a Stream",
+                                                "slug":  "kth-largest-element-in-a-stream",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  1046,
+                                                "title":  "Last Stone Weight",
+                                                "slug":  "last-stone-weight",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  973,
+                                                "title":  "K Closest Points to Origin",
+                                                "slug":  "k-closest-points-to-origin",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  215,
+                                                "title":  "Kth Largest Element In An Array",
+                                                "slug":  "kth-largest-element-in-an-array",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  621,
+                                                "title":  "Task Scheduler",
+                                                "slug":  "task-scheduler",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  355,
+                                                "title":  "Design Twitter",
+                                                "slug":  "design-twitter",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  295,
+                                                "title":  "Find Median From Data Stream",
+                                                "slug":  "find-median-from-data-stream",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Backtracking",
+                           "problems":  [
+                                            {
+                                                "id":  78,
+                                                "title":  "Subsets",
+                                                "slug":  "subsets",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  39,
+                                                "title":  "Combination Sum",
+                                                "slug":  "combination-sum",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  40,
+                                                "title":  "Combination Sum II",
+                                                "slug":  "combination-sum-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  46,
+                                                "title":  "Permutations",
+                                                "slug":  "permutations",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  90,
+                                                "title":  "Subsets II",
+                                                "slug":  "subsets-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  22,
+                                                "title":  "Generate Parentheses",
+                                                "slug":  "generate-parentheses",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  79,
+                                                "title":  "Word Search",
+                                                "slug":  "word-search",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  131,
+                                                "title":  "Palindrome Partitioning",
+                                                "slug":  "palindrome-partitioning",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  17,
+                                                "title":  "Letter Combinations of a Phone Number",
+                                                "slug":  "letter-combinations-of-a-phone-number",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  51,
+                                                "title":  "N Queens",
+                                                "slug":  "n-queens",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Tries",
+                           "problems":  [
+                                            {
+                                                "id":  208,
+                                                "title":  "Implement Trie Prefix Tree",
+                                                "slug":  "implement-trie-prefix-tree",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  211,
+                                                "title":  "Design Add And Search Words Data Structure",
+                                                "slug":  "design-add-and-search-words-data-structure",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  212,
+                                                "title":  "Word Search II",
+                                                "slug":  "word-search-ii",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Graphs",
+                           "problems":  [
+                                            {
+                                                "id":  200,
+                                                "title":  "Number of Islands",
+                                                "slug":  "number-of-islands",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  695,
+                                                "title":  "Max Area of Island",
+                                                "slug":  "max-area-of-island",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  133,
+                                                "title":  "Clone Graph",
+                                                "slug":  "clone-graph",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  286,
+                                                "title":  "Walls And Gates",
+                                                "slug":  "walls-and-gates",
+                                                "difficulty":  "Medium",
+                                                "premium":  true
+                                            },
+                                            {
+                                                "id":  994,
+                                                "title":  "Rotting Oranges",
+                                                "slug":  "rotting-oranges",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  417,
+                                                "title":  "Pacific Atlantic Water Flow",
+                                                "slug":  "pacific-atlantic-water-flow",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  130,
+                                                "title":  "Surrounded Regions",
+                                                "slug":  "surrounded-regions",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  207,
+                                                "title":  "Course Schedule",
+                                                "slug":  "course-schedule",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  210,
+                                                "title":  "Course Schedule II",
+                                                "slug":  "course-schedule-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  261,
+                                                "title":  "Graph Valid Tree",
+                                                "slug":  "graph-valid-tree",
+                                                "difficulty":  "Medium",
+                                                "premium":  true
+                                            },
+                                            {
+                                                "id":  323,
+                                                "title":  "Number of Connected Components In An Undirected Graph",
+                                                "slug":  "number-of-connected-components-in-an-undirected-graph",
+                                                "difficulty":  "Medium",
+                                                "premium":  true
+                                            },
+                                            {
+                                                "id":  684,
+                                                "title":  "Redundant Connection",
+                                                "slug":  "redundant-connection",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  127,
+                                                "title":  "Word Ladder",
+                                                "slug":  "word-ladder",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Advanced Graphs",
+                           "problems":  [
+                                            {
+                                                "id":  743,
+                                                "title":  "Network Delay Time",
+                                                "slug":  "network-delay-time",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  332,
+                                                "title":  "Reconstruct Itinerary",
+                                                "slug":  "reconstruct-itinerary",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  1584,
+                                                "title":  "Min Cost to Connect All Points",
+                                                "slug":  "min-cost-to-connect-all-points",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  778,
+                                                "title":  "Swim In Rising Water",
+                                                "slug":  "swim-in-rising-water",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  269,
+                                                "title":  "Alien Dictionary",
+                                                "slug":  "alien-dictionary",
+                                                "difficulty":  "Hard",
+                                                "premium":  true
+                                            },
+                                            {
+                                                "id":  787,
+                                                "title":  "Cheapest Flights Within K Stops",
+                                                "slug":  "cheapest-flights-within-k-stops",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "1-D Dynamic Programming",
+                           "problems":  [
+                                            {
+                                                "id":  70,
+                                                "title":  "Climbing Stairs",
+                                                "slug":  "climbing-stairs",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  746,
+                                                "title":  "Min Cost Climbing Stairs",
+                                                "slug":  "min-cost-climbing-stairs",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  198,
+                                                "title":  "House Robber",
+                                                "slug":  "house-robber",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  213,
+                                                "title":  "House Robber II",
+                                                "slug":  "house-robber-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  5,
+                                                "title":  "Longest Palindromic Substring",
+                                                "slug":  "longest-palindromic-substring",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  647,
+                                                "title":  "Palindromic Substrings",
+                                                "slug":  "palindromic-substrings",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  91,
+                                                "title":  "Decode Ways",
+                                                "slug":  "decode-ways",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  322,
+                                                "title":  "Coin Change",
+                                                "slug":  "coin-change",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  152,
+                                                "title":  "Maximum Product Subarray",
+                                                "slug":  "maximum-product-subarray",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  139,
+                                                "title":  "Word Break",
+                                                "slug":  "word-break",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  300,
+                                                "title":  "Longest Increasing Subsequence",
+                                                "slug":  "longest-increasing-subsequence",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  416,
+                                                "title":  "Partition Equal Subset Sum",
+                                                "slug":  "partition-equal-subset-sum",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "2-D Dynamic Programming",
+                           "problems":  [
+                                            {
+                                                "id":  62,
+                                                "title":  "Unique Paths",
+                                                "slug":  "unique-paths",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  1143,
+                                                "title":  "Longest Common Subsequence",
+                                                "slug":  "longest-common-subsequence",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  309,
+                                                "title":  "Best Time to Buy And Sell Stock With Cooldown",
+                                                "slug":  "best-time-to-buy-and-sell-stock-with-cooldown",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  518,
+                                                "title":  "Coin Change II",
+                                                "slug":  "coin-change-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  494,
+                                                "title":  "Target Sum",
+                                                "slug":  "target-sum",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  97,
+                                                "title":  "Interleaving String",
+                                                "slug":  "interleaving-string",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  329,
+                                                "title":  "Longest Increasing Path In a Matrix",
+                                                "slug":  "longest-increasing-path-in-a-matrix",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  115,
+                                                "title":  "Distinct Subsequences",
+                                                "slug":  "distinct-subsequences",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  72,
+                                                "title":  "Edit Distance",
+                                                "slug":  "edit-distance",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  312,
+                                                "title":  "Burst Balloons",
+                                                "slug":  "burst-balloons",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  10,
+                                                "title":  "Regular Expression Matching",
+                                                "slug":  "regular-expression-matching",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Greedy",
+                           "problems":  [
+                                            {
+                                                "id":  53,
+                                                "title":  "Maximum Subarray",
+                                                "slug":  "maximum-subarray",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  55,
+                                                "title":  "Jump Game",
+                                                "slug":  "jump-game",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  45,
+                                                "title":  "Jump Game II",
+                                                "slug":  "jump-game-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  134,
+                                                "title":  "Gas Station",
+                                                "slug":  "gas-station",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  846,
+                                                "title":  "Hand of Straights",
+                                                "slug":  "hand-of-straights",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  1899,
+                                                "title":  "Merge Triplets to Form Target Triplet",
+                                                "slug":  "merge-triplets-to-form-target-triplet",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  763,
+                                                "title":  "Partition Labels",
+                                                "slug":  "partition-labels",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  678,
+                                                "title":  "Valid Parenthesis String",
+                                                "slug":  "valid-parenthesis-string",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Intervals",
+                           "problems":  [
+                                            {
+                                                "id":  57,
+                                                "title":  "Insert Interval",
+                                                "slug":  "insert-interval",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  56,
+                                                "title":  "Merge Intervals",
+                                                "slug":  "merge-intervals",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  435,
+                                                "title":  "Non Overlapping Intervals",
+                                                "slug":  "non-overlapping-intervals",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  252,
+                                                "title":  "Meeting Rooms",
+                                                "slug":  "meeting-rooms",
+                                                "difficulty":  "Easy",
+                                                "premium":  true
+                                            },
+                                            {
+                                                "id":  253,
+                                                "title":  "Meeting Rooms II",
+                                                "slug":  "meeting-rooms-ii",
+                                                "difficulty":  "Medium",
+                                                "premium":  true
+                                            },
+                                            {
+                                                "id":  1851,
+                                                "title":  "Minimum Interval to Include Each Query",
+                                                "slug":  "minimum-interval-to-include-each-query",
+                                                "difficulty":  "Hard",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Math & Geometry",
+                           "problems":  [
+                                            {
+                                                "id":  48,
+                                                "title":  "Rotate Image",
+                                                "slug":  "rotate-image",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  54,
+                                                "title":  "Spiral Matrix",
+                                                "slug":  "spiral-matrix",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  73,
+                                                "title":  "Set Matrix Zeroes",
+                                                "slug":  "set-matrix-zeroes",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  202,
+                                                "title":  "Happy Number",
+                                                "slug":  "happy-number",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  66,
+                                                "title":  "Plus One",
+                                                "slug":  "plus-one",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  50,
+                                                "title":  "Pow(x, n)",
+                                                "slug":  "powx-n",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  43,
+                                                "title":  "Multiply Strings",
+                                                "slug":  "multiply-strings",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  2013,
+                                                "title":  "Detect Squares",
+                                                "slug":  "detect-squares",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            }
+                                        ]
+                       },
+                       {
+                           "name":  "Bit Manipulation",
+                           "problems":  [
+                                            {
+                                                "id":  136,
+                                                "title":  "Single Number",
+                                                "slug":  "single-number",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  191,
+                                                "title":  "Number of 1 Bits",
+                                                "slug":  "number-of-1-bits",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  338,
+                                                "title":  "Counting Bits",
+                                                "slug":  "counting-bits",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  190,
+                                                "title":  "Reverse Bits",
+                                                "slug":  "reverse-bits",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  268,
+                                                "title":  "Missing Number",
+                                                "slug":  "missing-number",
+                                                "difficulty":  "Easy",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  371,
+                                                "title":  "Sum of Two Integers",
+                                                "slug":  "sum-of-two-integers",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            },
+                                            {
+                                                "id":  7,
+                                                "title":  "Reverse Integer",
+                                                "slug":  "reverse-integer",
+                                                "difficulty":  "Medium",
+                                                "premium":  false
+                                            }
+                                        ]
+                       }
+                   ]
+}

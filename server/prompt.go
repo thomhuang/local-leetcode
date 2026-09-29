@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/thomhuang/local-leetcode/internal/question"
 )
 
 type UserAction int
@@ -16,6 +18,7 @@ const (
 	Invalid UserAction = iota
 	Authenticate
 	AddQuestion
+	AddProblemSet
 	TestCode
 	SubmitCode
 	Exit
@@ -30,6 +33,8 @@ func (app *App) Prompt() {
 		switch action {
 		case AddQuestion:
 			app.handleAddQuestion(scanner)
+		case AddProblemSet:
+			app.handleAddProblemSet(scanner)
 		case Authenticate:
 			app.handleAuthentication(scanner)
 		case TestCode:
@@ -51,10 +56,11 @@ func (app *App) promptForAction(scanner *bufio.Scanner) UserAction {
 	sb.WriteString("--------------------------------------------------------------------\n")
 	sb.WriteString("Please select your action of choice (only expecting the number):\n")
 	sb.WriteString("(1) Add a new question\n")
-	sb.WriteString("(2) Authenticate user\n")
-	sb.WriteString("(3) Test code\n")
-	sb.WriteString("(4) Submit code\n")
-	sb.WriteString("(5) Exit\n")
+	sb.WriteString("(2) Add a problem set\n")
+	sb.WriteString("(3) Authenticate user\n")
+	sb.WriteString("(4) Test code\n")
+	sb.WriteString("(5) Submit code\n")
+	sb.WriteString("(6) Exit\n")
 	sb.WriteString("--------------------------------------------------------------------")
 
 	app.promptWithValidation(
@@ -67,12 +73,14 @@ func (app *App) promptForAction(scanner *bufio.Scanner) UserAction {
 			case "1":
 				action = AddQuestion
 			case "2":
-				action = Authenticate
+				action = AddProblemSet
 			case "3":
-				action = TestCode
+				action = Authenticate
 			case "4":
-				action = SubmitCode
+				action = TestCode
 			case "5":
+				action = SubmitCode
+			case "6":
 				action = Exit
 			default:
 				action = Invalid
@@ -98,6 +106,36 @@ func (app *App) handleAddQuestion(scanner *bufio.Scanner) {
 		app.fail("Failed to save question content", err)
 		return
 	}
+}
+
+func (app *App) handleAddProblemSet(scanner *bufio.Scanner) {
+	name := app.promptForProblemSet(scanner)
+	app.importSetAndReport(name)
+}
+
+func (app *App) promptForProblemSet(scanner *bufio.Scanner) string {
+	names := availableProblemSets()
+	if len(names) == 0 {
+		fmt.Printf("No problem sets found under %s.\n", problemSetsDir)
+		return ""
+	}
+
+	prompt := "Which problem set would you like to add? Options: " + strings.Join(names, ", ")
+	var name string
+	app.promptWithValidation(
+		scanner,
+		prompt,
+		func(input string) (bool, string) {
+			for _, candidate := range names {
+				if input == candidate {
+					name = input
+					return true, ""
+				}
+			}
+			return false, fmt.Sprintf("Unknown problem set %q, please choose one of: %s", input, strings.Join(names, ", "))
+		},
+	)
+	return name
 }
 
 func (app *App) handleAuthentication(scanner *bufio.Scanner) {
@@ -177,7 +215,7 @@ func (app *App) loadUserCode(id int) (string, string, bool) {
 		return "", "", false
 	}
 
-	packageName := strings.ReplaceAll(titleSlug, "-", "_")
+	packageName := question.PackageName(titleSlug)
 	userSubmission := prepareSubmission(string(fileStream), packageName)
 
 	return userSubmission, titleSlug, true
