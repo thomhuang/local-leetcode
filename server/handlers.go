@@ -66,7 +66,6 @@ func (app *App) pollSolution(interpretId, titleSlug string) (solution.CheckSolut
 			return resp, fmt.Errorf("timed out after %s; last state %q", pollTimeout, resp.State)
 		}
 
-		fmt.Println("Pending...")
 		time.Sleep(pollInterval)
 	}
 }

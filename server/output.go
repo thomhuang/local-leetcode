@@ -40,7 +40,6 @@ func SaveMarkdownContent(ques question.Question) error {
 		return err
 	}
 
-	fmt.Printf("Successfully created content for %s. %s\n", ques.FrontEndQuestionId, ques.Title)
 	return nil
 }
 
@@ -93,7 +92,6 @@ func SaveProblemPlaceholder(ques question.Question) error {
 		return err
 	}
 
-	fmt.Printf("Created placeholder for %s. %s (%s)\n", ques.FrontEndQuestionId, ques.Title, reason)
 	return nil
 }
 

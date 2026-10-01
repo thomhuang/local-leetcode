@@ -176,7 +176,9 @@ func (m browseModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m browseModel) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "q", "esc", "ctrl+c":
+	case "q", "esc":
+		return m, func() tea.Msg { return browseExitMsg{} }
+	case "ctrl+c":
 		return m, tea.Quit
 	case "up", "k":
 		m.move(-1)
@@ -283,7 +285,7 @@ func (m *browseModel) move(delta int) {
 }
 
 func (m browseModel) listViewHeight() int {
-	h := m.height - 6
+	h := m.height - 8
 	if h < 3 {
 		h = 3
 	}
@@ -470,6 +472,10 @@ func (m browseModel) listView() string {
 	b.WriteString(titleStyle.Render(m.set.Name))
 	b.WriteString(dimStyle.Render(fmt.Sprintf("  ·  %d/%d accepted", accepted, total)))
 	b.WriteString("\n")
+	b.WriteString(progressBar(accepted, total, 32))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render(strings.Repeat("─", 60)))
+	b.WriteString("\n")
 
 	category := "all"
 	if m.category != "" {
@@ -509,7 +515,7 @@ func (m browseModel) listView() string {
 		b.WriteString("\n")
 	}
 
-	b.WriteString(dimStyle.Render("↑/↓ move · enter open · n next todo · c category · s status · q quit"))
+	b.WriteString(dimStyle.Render("↑/↓ move · enter open · n next todo · c category · s status · q back"))
 	if m.busy {
 		b.WriteString(dimStyle.Render("   working..."))
 	}
@@ -588,19 +594,4 @@ func indexOf(values []string, want string) int {
 		}
 	}
 	return -1
-}
-
-// BrowseProblems opens the checklist TUI for a problem set.
-func (app *App) BrowseProblems(setName string) error {
-	set, err := app.LoadProblemSet(setName)
-	if err != nil {
-		return err
-	}
-	if len(set.Problems()) == 0 {
-		return fmt.Errorf("problem set %q has no problems", setName)
-	}
-
-	program := tea.NewProgram(newBrowseModel(app, set), tea.WithAltScreen())
-	_, err = program.Run()
-	return err
 }

@@ -60,7 +60,9 @@ func main() {
 		return
 	}
 
-	app.Prompt()
+	if err := app.RunTUI(); err != nil {
+		app.fail("TUI error", err)
+	}
 }
 
 func NewApp() *App {

@@ -68,7 +68,7 @@ func (app *App) ImportProblemSet(set question.ProblemSet) ProblemSetImportSummar
 	for _, problem := range set.Problems() {
 		imported, premium, err := app.ImportProblem(problem)
 		if err != nil {
-			app.fail(fmt.Sprintf("Failed to import %s (%s)", problem.Title, problem.Slug), err)
+			app.Log.Append(fmt.Sprintf("Failed to import %s (%s): %s", problem.Title, problem.Slug, err.Error()))
 			summary.Failed = append(summary.Failed, problem)
 			continue
 		}

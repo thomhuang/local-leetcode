@@ -11,13 +11,14 @@ Run the program from the repository root. All output paths are relative to it.
 go run ./server
 ```
 
-The menu offers these actions:
+The whole CLI is a full-screen terminal UI. Move with the arrow keys (or `j`/`k`)
+and press `enter` to select. The menu offers these actions:
 
 1. **Add a new question.** Enter a problem number. The tool writes the problem
    statement and a Go stub to `server/output/problems/<slug>/`.
-2. **Add a problem set.** Choose a set from `server/output/ProblemSets/` (for
-   example `neetcode-150`). The tool fetches every problem in the set that is
-   not already on disk.
+2. **Add a problem set.** Choose a set from a dropdown of the sets under
+   `server/output/ProblemSets/` (for example `neetcode-150`). The tool fetches
+   every problem in the set that is not already on disk.
 3. **Authenticate user.** Paste the `Cookie` header from an authenticated
    request to `https://leetcode.com/graphql`. The tool needs the
    `LEETCODE_SESSION` and `csrftoken` values. It stores them in
@@ -27,7 +28,8 @@ The menu offers these actions:
 5. **Submit code.** Enter a problem number. The tool submits your solution file
    to LeetCode and prints the submission result. Accepted submissions are
    recorded in `server/output/progress.json`.
-6. **Browse problems.** Open an interactive checklist for a problem set. See
+6. **Browse problems.** Choose a set from a dropdown of the sets you have, then
+   open an interactive checklist for it. See
    [Browse and progress](#browse-and-progress).
 7. **Exit.**
 
@@ -55,8 +57,10 @@ function that must return a value. Replace the panic with your solution.
 
 ## Browse and progress
 
-The **Browse problems** action opens a full-screen checklist. Move with the
-arrow keys, `enter` to open a problem, and `q`/`esc` to go back to the menu.
+The **Browse problems** action opens a dropdown of the problem sets under
+`server/output/ProblemSets/`. Pick one with the arrow keys and `enter` to open
+its full-screen checklist. Move with the arrow keys, `enter` to open a problem,
+and `q`/`esc` to go back to the menu.
 Inside a problem you can test, submit, read the statement, open its `.go` file
 in your default editor (`o`), import it, or mark it accepted.
 
