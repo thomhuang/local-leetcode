@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/thomhuang/local-leetcode/internal/question"
@@ -11,8 +12,8 @@ import (
 func problemRowText(problem question.ProblemSetProblem, category string, showCategory bool) string {
 	const maxTitle = 46
 	title := problem.Title
-	if len(title) > maxTitle {
-		title = title[:maxTitle-3] + "..."
+	if runes := []rune(title); len(runes) > maxTitle {
+		title = string(runes[:maxTitle-3]) + "..."
 	}
 
 	row := fmt.Sprintf("%4d. %-*s %-6s", problem.ID, maxTitle, title, problem.Difficulty)
@@ -44,9 +45,9 @@ func matchCategory(set question.ProblemSet, want string) (string, error) {
 	return "", fmt.Errorf("unknown category %q, want one of: %s", want, strings.Join(categoryNames(set), ", "))
 }
 
-// printProblemSet renders a plain checklist, used by the -list flag so the
-// output can be piped or grepped.
-func (app *App) printProblemSet(setName, category, status string) error {
+// printProblemSet renders a plain checklist, used by the -list flag and the
+// REPL so the output can be piped or grepped.
+func (app *App) printProblemSet(out io.Writer, setName, category, status string) error {
 	set, err := app.LoadProblemSet(setName)
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ func (app *App) printProblemSet(setName, category, status string) error {
 		return err
 	}
 
-	fmt.Printf("%s\n\n", set.Name)
+	fmt.Fprintf(out, "%s\n\n", set.Name)
 
 	acceptedTotal, total := 0, 0
 	anyShown := false
@@ -91,20 +92,20 @@ func (app *App) printProblemSet(setName, category, status string) error {
 		}
 
 		anyShown = true
-		fmt.Printf("%s  %d/%d\n", cat.Name, catAccepted, len(cat.Problems))
+		fmt.Fprintf(out, "%s  %d/%d\n", cat.Name, catAccepted, len(cat.Problems))
 		for _, line := range lines {
-			fmt.Println("  " + line)
+			fmt.Fprintln(out, "  "+line)
 		}
-		fmt.Println()
+		fmt.Fprintln(out)
 
 		acceptedTotal += catAccepted
 		total += len(cat.Problems)
 	}
 
 	if !anyShown {
-		fmt.Println("No problems matched the filter.")
+		fmt.Fprintln(out, "No problems matched the filter.")
 		return nil
 	}
-	fmt.Printf("accepted %d/%d\n", acceptedTotal, total)
+	fmt.Fprintf(out, "accepted %d/%d\n", acceptedTotal, total)
 	return nil
 }

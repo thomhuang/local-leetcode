@@ -50,19 +50,25 @@ func (app *App) fetchCheckResult(interpretId, titleSlug string) (solution.CheckS
 // final state or pollTimeout passes.
 func (app *App) pollSolution(interpretId, titleSlug string) (solution.CheckSolutionResponse, error) {
 	if len(interpretId) == 0 {
+		app.log().Error("judge.poll", "no interpret id returned", "slug", titleSlug)
 		return solution.CheckSolutionResponse{}, fmt.Errorf("no interpret id returned; is your session still valid?")
 	}
 
 	deadline := time.Now().Add(pollTimeout)
+	polls := 0
 	for {
+		polls++
 		resp, err := app.fetchCheckResult(interpretId, titleSlug)
 		if err != nil {
+			app.log().Error("judge.poll", "check failed", "id", interpretId, "polls", polls, "error", err.Error())
 			return resp, err
 		}
 		if solution.IsFinal(resp.State) {
+			app.log().Debug("judge.poll", "final state", "id", interpretId, "state", resp.State, "polls", polls)
 			return resp, nil
 		}
 		if time.Now().After(deadline) {
+			app.log().Error("judge.poll", "timed out", "id", interpretId, "state", resp.State, "polls", polls)
 			return resp, fmt.Errorf("timed out after %s; last state %q", pollTimeout, resp.State)
 		}
 

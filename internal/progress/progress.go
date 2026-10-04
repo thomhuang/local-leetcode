@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -22,8 +23,11 @@ type Record struct {
 	At     time.Time `json:"at"`
 }
 
-// Store keeps accepted-problem records keyed by title slug.
+// Store keeps accepted-problem records keyed by title slug. A mutex guards the
+// record map because a submit command goroutine writes it while the UI goroutine
+// reads it to classify problems.
 type Store struct {
+	mu      sync.Mutex
 	path    string
 	records map[string]Record
 }
@@ -50,28 +54,38 @@ func Load(path string) (*Store, error) {
 
 // Accepted reports whether a problem has an accepted record.
 func (s *Store) Accepted(slug string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	record, ok := s.records[slug]
 	return ok && record.Status == Accepted
 }
 
 // MarkAccepted records an accepted submission for a problem.
 func (s *Store) MarkAccepted(slug string, at time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.records[slug] = Record{Status: Accepted, At: at}
 }
 
 // Clear removes any record for a problem.
 func (s *Store) Clear(slug string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	delete(s.records, slug)
 }
 
 // Len reports how many problems have a record.
 func (s *Store) Len() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return len(s.records)
 }
 
 // Save writes the store to disk.
 func (s *Store) Save() error {
+	s.mu.Lock()
 	data, err := json.MarshalIndent(s.records, "", "  ")
+	s.mu.Unlock()
 	if err != nil {
 		return fmt.Errorf("encode progress: %w", err)
 	}

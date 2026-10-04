@@ -11,6 +11,7 @@ const (
 	authFile        = authDir + "/leetcode_auth.json"
 	allProblemsFile = outputDir + "/all_problems.json"
 	logFile         = outputDir + "/local_leetcode_logs.txt"
+	assistantDir    = outputDir + "/assistant"
 
 	// os.ModeDir carries no permission bits, so MkdirAll(path, os.ModeDir)
 	// creates a 0000 directory on Unix. Use explicit permissions instead.
@@ -23,4 +24,8 @@ const (
 	httpTimeout  = 30 * time.Second
 	pollInterval = time.Second
 	pollTimeout  = 60 * time.Second
+
+	// chatTimeout is longer than httpTimeout because thinking mode can take a
+	// while to complete a response.
+	chatTimeout = 5 * time.Minute
 )

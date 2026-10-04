@@ -1,174 +1,13 @@
 package main
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/thomhuang/local-leetcode/util"
 )
-
-func TestTUIMenuViewRenders(t *testing.T) {
-	m := tuiModel{}
-	view := m.menuView()
-	for _, label := range mainMenu {
-		if !strings.Contains(view, label) {
-			t.Fatalf("menu view missing %q:\n%s", label, view)
-		}
-	}
-}
-
-func TestTUIMenuNavigation(t *testing.T) {
-	m := tuiModel{}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
-	m = updated.(tuiModel)
-	if m.menuIndex != 1 {
-		t.Fatalf("menuIndex after down = %d, want 1", m.menuIndex)
-	}
-
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
-	m = updated.(tuiModel)
-	if m.menuIndex != 0 {
-		t.Fatalf("menuIndex after up = %d, want 0", m.menuIndex)
-	}
-
-	// Wrap around to the last entry.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
-	m = updated.(tuiModel)
-	if m.menuIndex != len(mainMenu)-1 {
-		t.Fatalf("menuIndex after wrap = %d, want %d", m.menuIndex, len(mainMenu)-1)
-	}
-
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyUp})
-	m = updated.(tuiModel)
-	if m.menuIndex != len(mainMenu)-2 {
-		t.Fatalf("menuIndex after second up = %d, want %d", m.menuIndex, len(mainMenu)-2)
-	}
-	if cmd != nil {
-		t.Fatalf("plain navigation returned a command, want nil")
-	}
-}
-
-func TestTUIInputValidationAndSubmit(t *testing.T) {
-	var submitted string
-	m := tuiModel{}
-	m.startInput(
-		"How many?",
-		"",
-		func(input string) string {
-			if input == "" {
-				return "required"
-			}
-			return ""
-		},
-		func(input string) tea.Cmd {
-			submitted = input
-			return nil
-		},
-	)
-
-	// Empty submit keeps the screen and shows the error.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = updated.(tuiModel)
-	if m.screen != screenInput || m.inputError != "required" {
-		t.Fatalf("empty submit: screen=%v error=%q", m.screen, m.inputError)
-	}
-	if !strings.Contains(m.View(), "required") {
-		t.Fatalf("input view missing validation error:\n%s", m.View())
-	}
-
-	// Type a value and submit.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("42")})
-	m = updated.(tuiModel)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = updated.(tuiModel)
-	if submitted != "42" {
-		t.Fatalf("submitted = %q, want 42", submitted)
-	}
-	if m.screen != screenBusy {
-		t.Fatalf("screen after submit = %v, want screenBusy", m.screen)
-	}
-}
-
-func TestTUIInputBackspaceAndEscape(t *testing.T) {
-	m := tuiModel{}
-	m.startInput("prompt", "", nil, nil)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("12")})
-	m = updated.(tuiModel)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
-	m = updated.(tuiModel)
-	if m.inputValue != "1" {
-		t.Fatalf("inputValue after backspace = %q, want 1", m.inputValue)
-	}
-
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	m = updated.(tuiModel)
-	if m.screen != screenMenu {
-		t.Fatalf("screen after esc = %v, want screenMenu", m.screen)
-	}
-}
-
-func TestTUISelectPick(t *testing.T) {
-	var picked string
-	m := tuiModel{}
-	m.startSelect("Pick one", []string{"a", "b", "c"}, "working", func(choice string) tea.Cmd {
-		picked = choice
-		return nil
-	})
-
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
-	m = updated.(tuiModel)
-	if m.selectIndex != 1 {
-		t.Fatalf("selectIndex after down = %d, want 1", m.selectIndex)
-	}
-
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = updated.(tuiModel)
-	if picked != "b" {
-		t.Fatalf("picked = %q, want b", picked)
-	}
-	if m.screen != screenBusy || m.busyText != "working" {
-		t.Fatalf("screen=%v busyText=%q, want busy/working", m.screen, m.busyText)
-	}
-}
-
-func TestTUISelectEscape(t *testing.T) {
-	m := tuiModel{}
-	m.startSelect("Pick one", []string{"a"}, "", nil)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	m = updated.(tuiModel)
-	if m.screen != screenMenu {
-		t.Fatalf("screen after esc = %v, want screenMenu", m.screen)
-	}
-}
-
-func TestTUIBrowseExit(t *testing.T) {
-	m := tuiModel{browsing: true, screen: screenBrowse}
-	updated, _ := m.Update(browseExitMsg{})
-	m = updated.(tuiModel)
-	if m.browsing || m.screen != screenMenu {
-		t.Fatalf("browsing=%v screen=%v, want false/menu", m.browsing, m.screen)
-	}
-}
-
-func TestTUIResultScrollAndBack(t *testing.T) {
-	m := tuiModel{height: 6}
-	m.showResult("Result", "line1\nline2\nline3\nline4\nline5\nline6\nline7")
-	if m.screen != screenResult {
-		t.Fatalf("screen = %v, want screenResult", m.screen)
-	}
-
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
-	m = updated.(tuiModel)
-	if m.resultOffset != 1 {
-		t.Fatalf("resultOffset after down = %d, want 1", m.resultOffset)
-	}
-
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	m = updated.(tuiModel)
-	if m.screen != screenMenu {
-		t.Fatalf("screen after esc = %v, want screenMenu", m.screen)
-	}
-}
 
 func TestTUIFitHelpers(t *testing.T) {
 	if got := fitLine("hello", 10); got != "hello" {
@@ -176,12 +15,6 @@ func TestTUIFitHelpers(t *testing.T) {
 	}
 	if got := fitLine("hello world", 5); got != "hell…" {
 		t.Fatalf("fitLine long = %q, want hell…", got)
-	}
-	if got := fitTail("hello world", 5); got != "…orld" {
-		t.Fatalf("fitTail long = %q, want …orld", got)
-	}
-	if got := fitTail("hi", 5); got != "hi" {
-		t.Fatalf("fitTail short = %q, want hi", got)
 	}
 }
 
@@ -197,31 +30,98 @@ func TestTUIProgressBar(t *testing.T) {
 	}
 }
 
-func TestTUIConfirmHandler(t *testing.T) {
-	newConfirm := func() tuiModel {
-		m := tuiModel{screen: screenConfirm, confirmPrompt: "Sure?"}
-		m.confirmAnswer = func(model tuiModel, yes bool) (tea.Model, tea.Cmd) {
-			if yes {
-				model.screen = screenInput
-			} else {
-				model.screen = screenMenu
-			}
-			return model, nil
-		}
-		return m
+// stubModel records the last message it received so tests can verify that the
+// screen host forwards to its inner view.
+type stubModel struct {
+	last tea.Msg
+}
+
+func (s stubModel) Init() tea.Cmd { return nil }
+func (s stubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	s.last = msg
+	return s, nil
+}
+func (s stubModel) View() string { return "stub" }
+
+func newTestScreenHost(t *testing.T) (screenHost, *util.Log) {
+	t.Helper()
+	log := util.NewLog(filepath.Join(t.TempDir(), "debug.log"))
+	t.Cleanup(log.Close)
+	return newScreenHost(&App{Log: log}, stubModel{}), log
+}
+
+func TestScreenHostDebugOverlayToggle(t *testing.T) {
+	host, log := newTestScreenHost(t)
+	log.Info("test.event", "hello world", "k", "v")
+
+	updated, cmd := host.Update(tea.KeyMsg{Type: tea.KeyCtrlO})
+	host = updated.(screenHost)
+	if !host.debug.open {
+		t.Fatal("debug overlay did not open on ctrl+o")
+	}
+	if cmd == nil {
+		t.Fatal("opening the overlay returned no refresh command")
 	}
 
-	m := newConfirm()
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
-	m = updated.(tuiModel)
-	if m.screen != screenInput {
-		t.Fatalf("screen after yes = %v, want screenInput", m.screen)
+	view := host.View()
+	if !strings.Contains(view, "Debug log") || !strings.Contains(view, "test.event") {
+		t.Fatalf("debug view missing content:\n%s", view)
 	}
 
-	m = newConfirm()
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
-	m = updated.(tuiModel)
-	if m.screen != screenMenu {
-		t.Fatalf("screen after no = %v, want screenMenu", m.screen)
+	updated, _ = host.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	host = updated.(screenHost)
+	if host.debug.open {
+		t.Fatal("debug overlay did not close on esc")
+	}
+}
+
+func TestScreenHostForwardsMessagesToInner(t *testing.T) {
+	host, _ := newTestScreenHost(t)
+
+	updated, _ := host.Update(chatChunkMsg{content: "hello"})
+	host = updated.(screenHost)
+
+	inner, ok := host.inner.(stubModel)
+	if !ok {
+		t.Fatalf("inner type = %T, want stubModel", host.inner)
+	}
+	if _, ok := inner.last.(chatChunkMsg); !ok {
+		t.Fatalf("inner did not receive the chat chunk, got %T", inner.last)
+	}
+}
+
+func TestScreenHostBrowseExitQuits(t *testing.T) {
+	host, _ := newTestScreenHost(t)
+
+	_, cmd := host.Update(browseExitMsg{})
+	if cmd == nil {
+		t.Fatal("browseExitMsg returned no command")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("browseExitMsg command = %T, want tea.QuitMsg", cmd())
+	}
+}
+
+func TestDebugPanelFiltersAndVerbose(t *testing.T) {
+	log := util.NewLog(filepath.Join(t.TempDir(), "debug.log"))
+	t.Cleanup(log.Close)
+	log.Debug("dbg", "debug only")
+	log.Error("err", "error only")
+
+	panel := newDebugPanel(log)
+	panel.setHeight(20)
+	panel.level = util.LevelError
+
+	view := panel.view(100, 20)
+	if strings.Contains(view, "debug only") {
+		t.Fatalf("error filter still showed debug entry:\n%s", view)
+	}
+	if !strings.Contains(view, "error only") {
+		t.Fatalf("error filter dropped error entry:\n%s", view)
+	}
+
+	panel.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("v")})
+	if !panel.verbose || !log.Verbose() {
+		t.Fatal("v did not enable verbose recording")
 	}
 }

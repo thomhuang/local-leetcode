@@ -13,7 +13,7 @@ func maxArea(height []int) int {
 		res = max(res, maxArea)
 
 		// we shrink the space of the lower height as
-		// we will always get a bigger potential area by keeping the largest height!
+		// we will always get a bigger potential area by keeping the largest heighta!
 		if lHeight > rHeight {
 			r--
 		} else {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/thomhuang/local-leetcode/internal/progress"
 	"github.com/thomhuang/local-leetcode/internal/question"
@@ -13,11 +14,12 @@ import (
 )
 
 type App struct {
-	Log       *util.Log
-	UserAuth  user.UserAuthInfo
-	Questions map[int]question.QuestionMetadata
-	Progress  *progress.Store
-	client    *http.Client
+	Log        *util.Log
+	UserAuth   user.UserAuthInfo
+	Questions  map[int]question.QuestionMetadata
+	Progress   *progress.Store
+	client     *http.Client
+	chatClient *http.Client
 }
 
 func main() {
@@ -35,6 +37,11 @@ func main() {
 	app := NewApp()
 	defer app.Log.Close()
 
+	app.log().Info("app.start", "local-leetcode starting",
+		"pid", os.Getpid(),
+		"args", strings.Join(os.Args[1:], " "),
+		"log_file", app.log().Path())
+
 	store, err := progress.Load(progressFile)
 	if err != nil {
 		app.fail("Unable to load progress", err)
@@ -42,7 +49,7 @@ func main() {
 	app.Progress = store
 
 	if *listSet != "" {
-		if err := app.printProblemSet(*listSet, *category, *status); err != nil {
+		if err := app.printProblemSet(os.Stdout, *listSet, *category, *status); err != nil {
 			app.fail("Unable to list problem set", err)
 			os.Exit(1)
 		}
@@ -60,21 +67,31 @@ func main() {
 		return
 	}
 
-	if err := app.RunTUI(); err != nil {
-		app.fail("TUI error", err)
+	if err := app.RunREPL(); err != nil {
+		app.fail("REPL error", err)
 	}
 }
 
 func NewApp() *App {
 	return &App{
-		Log:    util.NewLog(logFile),
-		client: &http.Client{Timeout: httpTimeout},
+		Log:        util.NewLog(logFile),
+		client:     &http.Client{Timeout: httpTimeout},
+		chatClient: &http.Client{Timeout: chatTimeout},
 	}
+}
+
+// log returns the app's logger, or nil when logging is unavailable. The logger
+// methods tolerate a nil receiver, so callers can log unconditionally.
+func (app *App) log() *util.Log {
+	if app == nil {
+		return nil
+	}
+	return app.Log
 }
 
 // fail shows an error to the user and records it in the log.
 func (app *App) fail(context string, err error) {
 	msg := context + ": " + err.Error()
 	fmt.Println(msg)
-	app.Log.Append(msg)
+	app.log().Error("app.fail", context, "error", err.Error())
 }

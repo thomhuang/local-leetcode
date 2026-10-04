@@ -68,7 +68,8 @@ func (app *App) ImportProblemSet(set question.ProblemSet) ProblemSetImportSummar
 	for _, problem := range set.Problems() {
 		imported, premium, err := app.ImportProblem(problem)
 		if err != nil {
-			app.Log.Append(fmt.Sprintf("Failed to import %s (%s): %s", problem.Title, problem.Slug, err.Error()))
+			app.log().Error("set.import", "problem import failed",
+				"title", problem.Title, "slug", problem.Slug, "error", err.Error())
 			summary.Failed = append(summary.Failed, problem)
 			continue
 		}
@@ -114,6 +115,7 @@ func (app *App) fetchQuestionWithRetry(slug string) (question.Question, error) {
 	var lastErr error
 	for attempt := 0; attempt < importMaxRetries; attempt++ {
 		if attempt > 0 {
+			app.log().Warn("problem.fetch", "retrying question fetch", "slug", slug, "attempt", attempt+1, "error", lastErr.Error())
 			time.Sleep(importDelay * time.Duration(attempt+1))
 		}
 
@@ -123,6 +125,7 @@ func (app *App) fetchQuestionWithRetry(slug string) (question.Question, error) {
 		}
 		lastErr = err
 	}
+	app.log().Error("problem.fetch", "all fetch attempts failed", "slug", slug, "attempts", importMaxRetries, "error", lastErr.Error())
 	return question.Question{}, lastErr
 }
 

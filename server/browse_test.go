@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/thomhuang/local-leetcode/internal/question"
 )
 
@@ -113,6 +114,25 @@ func TestBrowseListViewRenders(t *testing.T) {
 	}
 	if !strings.Contains(view, "1. ") {
 		t.Fatalf("list view missing problem rows:\n%s", view)
+	}
+}
+
+func TestBrowseListViewFitsWindowWhenShrunk(t *testing.T) {
+	sizes := [][2]int{{80, 30}, {60, 24}, {40, 20}, {30, 15}, {24, 12}}
+	for _, size := range sizes {
+		width, height := size[0], size[1]
+		m := testBrowseModel()
+		m.width, m.height = width, height
+
+		view := m.View()
+		if got := strings.Count(view, "\n") + 1; got > height {
+			t.Fatalf("size %v: list view has %d lines, over the %d-line height:\n%s", size, got, height, view)
+		}
+		for i, line := range strings.Split(view, "\n") {
+			if w := lipgloss.Width(line); w > width {
+				t.Fatalf("size %v: line %d width %d exceeds %d: %q", size, i, w, width, line)
+			}
+		}
 	}
 }
 

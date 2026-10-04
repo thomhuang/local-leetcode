@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/thomhuang/local-leetcode/internal/solution"
 )
@@ -119,6 +120,7 @@ func (app *App) GetUser() ([]byte, error) {
 // do sends one request to LeetCode and returns the response body. It attaches
 // the saved cookies when present and fails on any non-2xx status.
 func (app *App) do(method, url string, payload []byte, referer string) ([]byte, error) {
+	started := time.Now()
 	var body io.Reader
 	if payload != nil {
 		body = bytes.NewReader(payload)
@@ -126,6 +128,7 @@ func (app *App) do(method, url string, payload []byte, referer string) ([]byte, 
 
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
+		app.log().Error("http.request", "build request failed", "method", method, "url", url, "error", err.Error())
 		return nil, err
 	}
 
@@ -138,18 +141,38 @@ func (app *App) do(method, url string, payload []byte, referer string) ([]byte, 
 		request.Header.Set("Referer", referer)
 	}
 
+	app.log().Debug("http.request", "sending request",
+		"method", method,
+		"url", url,
+		"authenticated", len(app.UserAuth.AuthCookies) > 0)
+	app.log().VerboseDebug("http.request.body", "request payload", "json", string(payload))
+
 	resp, err := app.client.Do(request)
 	if err != nil {
+		app.log().Error("http.request", "request failed",
+			"method", method,
+			"url", url,
+			"duration_ms", time.Since(started).Milliseconds(),
+			"error", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
+		app.log().Error("http.request", "read response failed",
+			"method", method, "url", url, "status", resp.StatusCode, "error", err.Error())
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
 
+	app.log().Debug("http.response", "response received",
+		"method", method,
+		"url", url,
+		"status", resp.StatusCode,
+		"bytes", len(data),
+		"duration_ms", time.Since(started).Milliseconds())
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		app.log().VerboseDebug("http.response.body", "error payload", "body", string(data))
 		return nil, fmt.Errorf("%s %s returned status %d", method, url, resp.StatusCode)
 	}
 

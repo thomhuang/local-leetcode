@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/thomhuang/local-leetcode/internal/assistant"
 	"github.com/thomhuang/local-leetcode/internal/question"
 )
 
@@ -27,6 +28,7 @@ const (
 	modeList browseMode = iota
 	modeDetail
 	modeText
+	modeChat
 )
 
 type browseRow struct {
@@ -53,8 +55,11 @@ type browseModel struct {
 	textTitle     string
 	textLines     []string
 	textOffset    int
+	lastResult    string
 	busy          bool
 	message       string
+
+	chat chatModel
 }
 
 type testResultMsg struct {
@@ -127,16 +132,33 @@ func (m browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		if m.mode == modeChat {
+			m.chat, _ = m.chat.Update(msg)
+		}
 		m.clampOffset()
+		m.clampTextOffset()
 		return m, nil
+	case chatStreamReadyMsg, chatChunkMsg:
+		if m.mode != modeChat {
+			return m, nil
+		}
+		var cmd tea.Cmd
+		m.chat, cmd = m.chat.Update(msg)
+		if m.chat.exited {
+			m.chat.exited = false
+			m.mode = modeDetail
+		}
+		return m, cmd
 	case testResultMsg:
 		m.busy = false
-		m.showText("Test result", m.renderResult(msg.text, msg.err))
+		m.lastResult = m.renderResult(msg.text, msg.err)
+		m.showText("Test result", m.lastResult)
 		return m, nil
 	case submitResultMsg:
 		m.busy = false
 		m.refresh()
-		m.showText("Submission result", m.renderResult(msg.text, msg.err))
+		m.lastResult = m.renderResult(msg.text, msg.err)
+		m.showText("Submission result", m.lastResult)
 		return m, nil
 	case statementMsg:
 		m.busy = false
@@ -148,6 +170,15 @@ func (m browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.message = msg.message
 		return m, nil
 	case tea.KeyMsg:
+		if m.mode == modeChat {
+			var cmd tea.Cmd
+			m.chat, cmd = m.chat.Update(msg)
+			if m.chat.exited {
+				m.chat.exited = false
+				m.mode = modeDetail
+			}
+			return m, cmd
+		}
 		return m.handleKey(msg)
 	}
 	return m, nil
@@ -199,6 +230,7 @@ func (m browseModel) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.detailIndex = m.visible[m.cursor]
 			m.mode = modeDetail
 			m.message = ""
+			m.lastResult = ""
 		}
 	case "c":
 		m.cycleCategory()
@@ -241,6 +273,10 @@ func (m browseModel) handleDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "o":
 		m.openFile()
+	case "a":
+		if !m.busy {
+			m.openChat()
+		}
 	case "m":
 		m.toggleAccepted()
 	}
@@ -367,15 +403,19 @@ func (m *browseModel) nextTodo() {
 
 // openFile launches the problem's solution file in the default application.
 func (m *browseModel) openFile() {
-	starter := starterFilePath(problemsDir, m.rows[m.detailIndex].problem)
+	row := m.rows[m.detailIndex]
+	starter := starterFilePath(problemsDir, row.problem)
 	if starter == "" {
+		m.app.log().Warn("file.open", "no starter file", "slug", row.problem.Slug)
 		m.message = "No .go file yet - press i to import."
 		return
 	}
 	if err := openInDefaultApp(starter); err != nil {
+		m.app.log().Error("file.open", "open failed", "path", starter, "error", err.Error())
 		m.message = "Unable to open file: " + err.Error()
 		return
 	}
+	m.app.log().Debug("file.open", "opened file", "path", starter)
 	m.message = "Opened " + starter
 }
 
@@ -385,16 +425,52 @@ func (m *browseModel) toggleAccepted() {
 	accepted := row.state != stateAccepted
 
 	if err := m.app.setAccepted(row.problem.Slug, accepted); err != nil {
+		m.app.log().Error("progress.save", "save failed", "slug", row.problem.Slug, "error", err.Error())
 		m.message = "Unable to save progress: " + err.Error()
 		return
 	}
 	m.refresh()
+
+	m.app.log().Info("progress.mark", "accepted toggled", "slug", row.problem.Slug, "accepted", accepted)
 
 	if accepted {
 		m.message = "Marked accepted: " + title
 	} else {
 		m.message = "Cleared accepted: " + title
 	}
+}
+
+// openChat starts an assistant session grounded in the current problem.
+func (m *browseModel) openChat() {
+	if !hasAssistantKey() {
+		m.app.log().Warn("assistant.open", "missing API key", "env", deepseekAPIKeyEnv)
+		m.message = "Set " + deepseekAPIKeyEnv + " to use the assistant."
+		return
+	}
+
+	row := m.rows[m.detailIndex]
+	cfg, prompt, err := assistant.Load(assistantDir)
+	if err != nil {
+		m.app.log().Error("assistant.open", "load config failed", "error", err.Error())
+		m.message = "Unable to load assistant config: " + err.Error()
+		return
+	}
+
+	system := strings.TrimRight(prompt, "\n")
+	if context := buildProblemContext(row.problem, m.lastResult); strings.TrimSpace(context) != "" {
+		system += "\n\n" + context
+	}
+
+	m.app.log().Info("assistant.open", "chat session started",
+		"problem", row.problem.ID,
+		"title", row.problem.Title,
+		"model", cfg.Model,
+		"system_chars", len(system))
+	m.app.log().VerboseDebug("assistant.system", "system prompt", "text", system)
+
+	m.chat = newChatModel(m.app, cfg, system, fmt.Sprintf("%d. %s", row.problem.ID, row.problem.Title), m.width, m.height)
+	m.mode = modeChat
+	m.message = ""
 }
 
 func (m *browseModel) showText(title, body string) {
@@ -427,6 +503,9 @@ func (m browseModel) statementCmd() tea.Cmd {
 	path := problemsDir + "/" + row.problem.Slug + "/" + row.problem.Slug + ".md"
 	return func() tea.Msg {
 		data, err := os.ReadFile(path)
+		if err != nil {
+			m.app.log().Error("statement.read", "read failed", "path", path, "error", err.Error())
+		}
 		return statementMsg{title: title, text: string(data), err: err}
 	}
 }
@@ -437,12 +516,16 @@ func (m browseModel) importCmd() tea.Cmd {
 		imported, premium, err := m.app.ImportProblem(problem)
 		switch {
 		case err != nil:
+			m.app.log().Error("problem.import", "import failed", "slug", problem.Slug, "error", err.Error())
 			return importResultMsg{message: "Import failed: " + err.Error()}
 		case !imported:
+			m.app.log().Debug("problem.import", "already imported", "slug", problem.Slug)
 			return importResultMsg{message: "Already imported: " + problem.Title}
 		case premium:
+			m.app.log().Info("problem.import", "premium placeholder created", "slug", problem.Slug)
 			return importResultMsg{message: "Premium placeholder created: " + problem.Title}
 		default:
+			m.app.log().Info("problem.import", "problem imported", "slug", problem.Slug)
 			return importResultMsg{message: "Imported: " + problem.Title}
 		}
 	}
@@ -454,6 +537,8 @@ func (m browseModel) View() string {
 		return m.textView()
 	case modeDetail:
 		return m.detailView()
+	case modeChat:
+		return m.chat.View()
 	default:
 		return m.listView()
 	}
@@ -461,6 +546,12 @@ func (m browseModel) View() string {
 
 func (m browseModel) listView() string {
 	var b strings.Builder
+
+	width := termWidth(m.width)
+	barWidth := 32
+	if width < barWidth {
+		barWidth = width
+	}
 
 	accepted, total := 0, len(m.rows)
 	for _, row := range m.rows {
@@ -472,9 +563,9 @@ func (m browseModel) listView() string {
 	b.WriteString(titleStyle.Render(m.set.Name))
 	b.WriteString(dimStyle.Render(fmt.Sprintf("  ·  %d/%d accepted", accepted, total)))
 	b.WriteString("\n")
-	b.WriteString(progressBar(accepted, total, 32))
+	b.WriteString(progressBar(accepted, total, barWidth))
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render(strings.Repeat("─", 60)))
+	b.WriteString(dimStyle.Render(strings.Repeat("─", width)))
 	b.WriteString("\n")
 
 	category := "all"
@@ -485,7 +576,7 @@ func (m browseModel) listView() string {
 	if m.status != "" {
 		status = m.status
 	}
-	b.WriteString(dimStyle.Render(fmt.Sprintf("category: %s (c)   status: %s (s)   showing %d", category, status, len(m.visible))))
+	b.WriteString(clipStyled(dimStyle.Render(fmt.Sprintf("category: %s (c)   status: %s (s)   showing %d", category, status, len(m.visible))), width))
 	b.WriteString("\n\n")
 
 	height := m.listViewHeight()
@@ -502,7 +593,7 @@ func (m browseModel) listView() string {
 		} else {
 			line = "  " + line
 		}
-		b.WriteString(line)
+		b.WriteString(clipStyled(line, width))
 		b.WriteString("\n")
 	}
 	for pos := end - m.offset; pos < height; pos++ {
@@ -510,25 +601,27 @@ func (m browseModel) listView() string {
 	}
 
 	if m.message != "" {
-		b.WriteString("\n" + dimStyle.Render(m.message) + "\n")
+		b.WriteString("\n" + clipStyled(dimStyle.Render(m.message), width) + "\n")
 	} else {
 		b.WriteString("\n")
 	}
 
-	b.WriteString(dimStyle.Render("↑/↓ move · enter open · n next todo · c category · s status · q back"))
+	footer := "↑/↓ move · enter open · n next todo · c category · s status · q back"
 	if m.busy {
-		b.WriteString(dimStyle.Render("   working..."))
+		footer += "   working..."
 	}
+	b.WriteString(clipStyled(dimStyle.Render(footer), width))
 	return b.String()
 }
 
 func (m browseModel) detailView() string {
 	row := m.rows[m.detailIndex]
+	width := termWidth(m.width)
 
 	var b strings.Builder
-	b.WriteString(titleStyle.Render(fmt.Sprintf("%d. %s", row.problem.ID, row.problem.Title)))
+	b.WriteString(clipStyled(titleStyle.Render(fmt.Sprintf("%d. %s", row.problem.ID, row.problem.Title)), width))
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render(fmt.Sprintf("%s · %s", row.problem.Difficulty, row.category)))
+	b.WriteString(clipStyled(dimStyle.Render(fmt.Sprintf("%s · %s", row.problem.Difficulty, row.category)), width))
 	b.WriteString("\n\n")
 	b.WriteString(fmt.Sprintf("status: %s %s\n", coloredSymbol(row.state), row.state.Label()))
 	if starter := starterFilePath(problemsDir, row.problem); starter != "" {
@@ -542,7 +635,7 @@ func (m browseModel) detailView() string {
 	if row.state == stateAccepted {
 		mark = "m clear accepted"
 	}
-	b.WriteString(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "o open file", "i import", mark, "esc back"}, " · ")))
+	b.WriteString(clipStyled(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "o open file", "a assistant", "i import", mark, "esc back"}, " · ")), width))
 
 	if m.busy {
 		b.WriteString("\n\n" + dimStyle.Render("working..."))
@@ -555,7 +648,8 @@ func (m browseModel) detailView() string {
 
 func (m browseModel) textView() string {
 	var b strings.Builder
-	b.WriteString(titleStyle.Render(m.textTitle))
+	width := termWidth(m.width)
+	b.WriteString(clipStyled(titleStyle.Render(m.textTitle), width))
 	b.WriteString("\n\n")
 
 	height := m.textViewHeight()
@@ -568,7 +662,7 @@ func (m browseModel) textView() string {
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render("↑/↓ scroll · esc back"))
+	b.WriteString(clipStyled(dimStyle.Render("↑/↓ scroll · esc back"), width))
 	return b.String()
 }
 
