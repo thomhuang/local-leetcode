@@ -102,6 +102,12 @@ the next message (`none`/`low`/`medium`/`high`/`max`), and the arrow keys or
 `pgup`/`pgdn` scroll the transcript. Press `ctrl+o` to open the debug log
 without leaving the chat.
 
+While you stay on the same problem, the conversation persists: leave with `esc`
+and come back with `a`, and the history is still there. Opening a different
+problem starts a fresh session. Press `ctrl+n` to reset the current problem's
+conversation, which re-reads your solution and most recent result so the new
+session sees the latest context.
+
 The assistant needs an API key in the `DEEPSEEK_API_KEY` environment variable:
 
 ```

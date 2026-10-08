@@ -165,6 +165,30 @@ func TestBrowseUpdateKeepsModelConsistent(t *testing.T) {
 	}
 }
 
+func TestBrowseChatReusesSessionForSameProblem(t *testing.T) {
+	t.Setenv(deepseekAPIKeyEnv, "test-key")
+
+	m := testBrowseModel()
+	m.app = &App{}
+	m.mode = modeDetail
+	m.detailIndex = 0 // slug "a1"
+	m.chatSlug = "a1"
+	m.chat = testChatModel()
+	m.chat.input = "kept"
+
+	m.openChat()
+
+	if m.mode != modeChat {
+		t.Fatalf("mode = %v, want modeChat", m.mode)
+	}
+	if m.chat.input != "kept" {
+		t.Fatalf("chat input = %q, want the existing session reused", m.chat.input)
+	}
+	if m.chatSlug != "a1" {
+		t.Fatalf("chatSlug = %q, want a1", m.chatSlug)
+	}
+}
+
 func TestExtractImageURLs(t *testing.T) {
 	markdown := "Intro\n\n![](https://assets.leetcode.com/a.png)\n\n**![](https://assets.leetcode.com/b.png)**\n\n![alt](https://assets.leetcode.com/c.png)\n\n![](https://assets.leetcode.com/a.png)\n"
 	got := extractImageURLs(markdown)

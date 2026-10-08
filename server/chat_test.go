@@ -122,6 +122,32 @@ func TestChatErrorDropsEmptyPlaceholder(t *testing.T) {
 	}
 }
 
+func TestChatResetClearsConversation(t *testing.T) {
+	m := testChatModel()
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("hi")})
+	m = updated
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated
+	m.appendChunk("hello", "")
+	m.finishStream()
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlN})
+	m = updated
+
+	if len(m.messages) != 1 {
+		t.Fatalf("messages after reset = %d, want just the system message", len(m.messages))
+	}
+	if len(m.turns) != 0 {
+		t.Fatalf("turns after reset = %d, want 0", len(m.turns))
+	}
+	if m.streaming {
+		t.Fatalf("streaming = true after reset")
+	}
+	if m.input != "" {
+		t.Fatalf("input = %q after reset, want empty", m.input)
+	}
+}
+
 func TestBrowseAssistantRequiresKey(t *testing.T) {
 	t.Setenv(deepseekAPIKeyEnv, "")
 

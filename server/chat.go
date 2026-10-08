@@ -94,6 +94,11 @@ func newChatModel(app *App, cfg assistant.Config, system, title string, width, h
 // server-side, but is kept so it matches the config default).
 var reasoningEfforts = []string{"none", "low", "medium", "high", "max"}
 
+// chatResetKey starts a fresh conversation for the current problem. The browse
+// screen intercepts it to rebuild the grounded context; the standalone ask
+// screen clears the conversation in place.
+const chatResetKey = "ctrl+n"
+
 func (m chatModel) currentEffort() string {
 	if !m.cfg.Thinking {
 		return "none"
@@ -186,6 +191,8 @@ func (m chatModel) handleKey(msg tea.KeyMsg) (chatModel, tea.Cmd) {
 		m.clampScroll()
 	case tea.KeyCtrlR:
 		m.cycleEffort()
+	case tea.KeyCtrlN:
+		m.reset()
 	case tea.KeyCtrlE:
 		m.dumpTranscript()
 	case tea.KeySpace:
@@ -354,6 +361,28 @@ func (m *chatModel) close() {
 			"duration_ms", time.Since(m.startedAt).Milliseconds())
 	}
 	m.finishStream()
+}
+
+// reset clears the conversation and aborts any in-flight reply, keeping only
+// the system prompt so the chat starts fresh for the same problem. The browse
+// screen rebuilds the grounded context instead; this path is the standalone
+// ask screen, where the system prompt is already fixed.
+func (m *chatModel) reset() {
+	m.close()
+	m.turns = nil
+	if len(m.messages) > 0 {
+		m.messages = m.messages[:1]
+	}
+	m.input = ""
+	m.scroll = 0
+	m.follow = true
+	m.assistantStarted = false
+	m.startedAt = time.Time{}
+	m.contentChars = 0
+	m.reasoningChars = 0
+	m.chunks = 0
+	m.status = "conversation reset"
+	m.app.log().Info("chat.reset", "conversation cleared")
 }
 
 func (m chatModel) maxScroll() int {
@@ -641,9 +670,9 @@ func (m chatModel) statusLine() string {
 
 func (m chatModel) helpText() string {
 	if m.streaming {
-		return "streaming… · ctrl+r effort · ctrl+e export · esc cancel · ↑/↓ scroll"
+		return "streaming… · ctrl+r effort · ctrl+n reset · ctrl+e export · esc cancel · ↑/↓"
 	}
-	return "enter send · ctrl+r effort · ctrl+e export · esc back · ↑/↓ scroll"
+	return "enter send · ctrl+r effort · ctrl+n reset · ctrl+e export · esc back · ↑/↓"
 }
 
 // helpLines word-wraps the footer help to the view width, so a narrow window

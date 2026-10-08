@@ -62,7 +62,8 @@ type browseModel struct {
 	busy          bool
 	message       string
 
-	chat chatModel
+	chat     chatModel
+	chatSlug string
 }
 
 type testResultMsg struct {
@@ -174,6 +175,10 @@ func (m browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		if m.mode == modeChat {
+			if msg.String() == chatResetKey {
+				m.resetChat()
+				return m, nil
+			}
 			var cmd tea.Cmd
 			m.chat, cmd = m.chat.Update(msg)
 			if m.chat.exited {
@@ -445,7 +450,10 @@ func (m *browseModel) toggleAccepted() {
 	}
 }
 
-// openChat starts an assistant session grounded in the current problem.
+// openChat starts an assistant session grounded in the current problem. When
+// the assistant is reopened for the same problem, the existing conversation is
+// reused so its context survives leaving and returning to the chat. Opening a
+// different problem starts a fresh session.
 func (m *browseModel) openChat() {
 	if !hasAssistantKey() {
 		m.app.log().Warn("assistant.open", "missing API key", "env", deepseekAPIKeyEnv)
@@ -454,11 +462,47 @@ func (m *browseModel) openChat() {
 	}
 
 	row := m.rows[m.detailIndex]
+	if m.chatSlug == row.problem.Slug {
+		m.app.log().Debug("assistant.open", "reusing chat session", "slug", row.problem.Slug)
+		m.mode = modeChat
+		m.message = ""
+		return
+	}
+
+	chat, ok := m.buildChat(row, "assistant.open")
+	if !ok {
+		return
+	}
+	m.chat = chat
+	m.chatSlug = row.problem.Slug
+	m.mode = modeChat
+	m.message = ""
+}
+
+// resetChat starts a fresh assistant session for the current problem. It
+// re-reads the statement and current solution so the new conversation sees the
+// latest context.
+func (m *browseModel) resetChat() {
+	row := m.rows[m.detailIndex]
+	chat, ok := m.buildChat(row, "assistant.reset")
+	if !ok {
+		return
+	}
+	chat.status = "conversation reset"
+	m.chat = chat
+	m.chatSlug = row.problem.Slug
+	m.app.log().Info("assistant.reset", "conversation reset", "slug", row.problem.Slug)
+}
+
+// buildChat loads the assistant config and assembles a fresh chatModel grounded
+// in the given problem row. On failure it records the error in m.message and
+// reports ok=false.
+func (m *browseModel) buildChat(row browseRow, event string) (chatModel, bool) {
 	cfg, prompt, err := assistant.Load(assistantDir)
 	if err != nil {
-		m.app.log().Error("assistant.open", "load config failed", "error", err.Error())
+		m.app.log().Error(event, "load config failed", "error", err.Error())
 		m.message = "Unable to load assistant config: " + err.Error()
-		return
+		return chatModel{}, false
 	}
 
 	system := strings.TrimRight(prompt, "\n")
@@ -466,16 +510,14 @@ func (m *browseModel) openChat() {
 		system += "\n\n" + context
 	}
 
-	m.app.log().Info("assistant.open", "chat session started",
+	m.app.log().Info(event, "chat session started",
 		"problem", row.problem.ID,
 		"title", row.problem.Title,
 		"model", cfg.Model,
 		"system_chars", len(system))
-	m.app.log().VerboseDebug("assistant.system", "system prompt", "text", system)
+	m.app.log().VerboseDebug(event+".system", "system prompt", "text", system)
 
-	m.chat = newChatModel(m.app, cfg, system, fmt.Sprintf("%d. %s", row.problem.ID, row.problem.Title), m.width, m.height)
-	m.mode = modeChat
-	m.message = ""
+	return newChatModel(m.app, cfg, system, fmt.Sprintf("%d. %s", row.problem.ID, row.problem.Title), m.width, m.height), true
 }
 
 func (m *browseModel) showText(title, body string) {
