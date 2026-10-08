@@ -3,6 +3,10 @@
     "status": "accepted",
     "at": "2026-09-30T19:46:59.2536482-07:00"
   },
+  "best-time-to-buy-and-sell-stock": {
+    "status": "accepted",
+    "at": "2026-10-07T19:48:01.408135-07:00"
+  },
   "container-with-most-water": {
     "status": "accepted",
     "at": "2026-09-30T20:06:55.5806754-07:00"
@@ -19,6 +23,14 @@
     "status": "accepted",
     "at": "2026-09-30T19:23:11.520575-07:00"
   },
+  "longest-substring-without-repeating-characters": {
+    "status": "accepted",
+    "at": "2026-10-07T19:50:21.9507319-07:00"
+  },
+  "permutation-in-string": {
+    "status": "accepted",
+    "at": "2026-10-07T20:03:48.5775445-07:00"
+  },
   "product-of-array-except-self": {
     "status": "accepted",
     "at": "2026-09-29T20:06:02.6627113-07:00"
@@ -26,6 +38,10 @@
   "top-k-frequent-elements": {
     "status": "accepted",
     "at": "2026-09-29T19:45:20.2030895-07:00"
+  },
+  "trapping-rain-water": {
+    "status": "accepted",
+    "at": "2026-10-07T19:30:16.5309045-07:00"
   },
   "two-sum": {
     "status": "accepted",
@@ -42,6 +58,10 @@
   "valid-palindrome": {
     "status": "accepted",
     "at": "2026-09-30T19:32:12.2228628-07:00"
+  },
+  "valid-parentheses": {
+    "status": "accepted",
+    "at": "2026-10-07T20:23:09.8245086-07:00"
   },
   "valid-sudoku": {
     "status": "accepted",
