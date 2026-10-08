@@ -161,7 +161,9 @@ func OutputQuestionResults(submission solution.CheckSolutionResponse) string {
 		sb.WriteRune('\n')
 		if len(submission.CompileError) != 0 {
 			sb.WriteString(submission.CompileError)
+			sb.WriteByte('\n')
 		}
+		writeRuntimeError(&sb, submission)
 	}
 
 	return sb.String()
@@ -213,15 +215,7 @@ func OutputSubmissionResults(submission solution.CheckSolutionResponse) string {
 		sb.WriteString(submission.CompileError)
 		sb.WriteByte('\n')
 	}
-	runtimeError := submission.RuntimeError
-	if runtimeError == "" {
-		runtimeError = submission.FullRuntimeError
-	}
-	if runtimeError != "" {
-		sb.WriteString("Runtime error:\n")
-		sb.WriteString(runtimeError)
-		sb.WriteByte('\n')
-	}
+	writeRuntimeError(&sb, submission)
 
 	// A full submission reports the failing input and expected output in these
 	// fields. It does not include the code_answer fields used by test runs.
@@ -260,6 +254,22 @@ func OutputSubmissionResults(submission solution.CheckSolutionResponse) string {
 	writeAnswerComparisons(&sb, "Standard output", submission.ExpectedStdOutputList, submission.StdOutputList)
 
 	return sb.String()
+}
+
+func writeRuntimeError(sb *strings.Builder, submission solution.CheckSolutionResponse) {
+	runtimeError := submission.RuntimeError
+	if runtimeError == "" {
+		runtimeError = submission.FullRuntimeError
+	}
+	if runtimeError == "" {
+		return
+	}
+
+	sb.WriteString("Runtime error:\n")
+	sb.WriteString(runtimeError)
+	if !strings.HasSuffix(runtimeError, "\n") {
+		sb.WriteByte('\n')
+	}
 }
 
 func writeAnswerComparisons(sb *strings.Builder, title string, expected, actual solution.StringList) {

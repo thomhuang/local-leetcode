@@ -7,6 +7,38 @@ import (
 	"github.com/thomhuang/local-leetcode/internal/solution"
 )
 
+func TestOutputQuestionResultsUnsuccessfulPrintsRuntimeError(t *testing.T) {
+	response := solution.CheckSolutionResponse{
+		RunSuccessful:   false,
+		StatusMessage:   "Runtime Error",
+		FullRuntimeError: "panic: runtime error: index out of range [5] with length 3",
+	}
+
+	got := OutputQuestionResults(response)
+	for _, want := range []string{
+		"Unsuccessful run!",
+		"Runtime Error",
+		"Runtime error:\npanic: runtime error: index out of range [5] with length 3",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("OutputQuestionResults() = %q, want it to contain %q", got, want)
+		}
+	}
+}
+
+func TestOutputQuestionResultsUnsuccessfulFallsBackToRuntimeError(t *testing.T) {
+	response := solution.CheckSolutionResponse{
+		RunSuccessful: false,
+		StatusMessage: "Runtime Error",
+		RuntimeError:  "runtime error: index out of range",
+	}
+
+	got := OutputQuestionResults(response)
+	if !strings.Contains(got, "Runtime error:\nruntime error: index out of range") {
+		t.Errorf("OutputQuestionResults() = %q, want it to contain the runtime error", got)
+	}
+}
+
 func TestOutputSubmissionResultsAcceptedUsesStatusCode(t *testing.T) {
 	runtimePercentile := 99.5
 	memoryPercentile := 98.25
