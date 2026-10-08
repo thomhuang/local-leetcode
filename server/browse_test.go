@@ -164,3 +164,25 @@ func TestBrowseUpdateKeepsModelConsistent(t *testing.T) {
 		t.Fatalf("mode after esc = %v, want modeList", m.mode)
 	}
 }
+
+func TestExtractImageURLs(t *testing.T) {
+	markdown := "Intro\n\n![](https://assets.leetcode.com/a.png)\n\n**![](https://assets.leetcode.com/b.png)**\n\n![alt](https://assets.leetcode.com/c.png)\n\n![](https://assets.leetcode.com/a.png)\n"
+	got := extractImageURLs(markdown)
+	want := []string{
+		"https://assets.leetcode.com/a.png",
+		"https://assets.leetcode.com/b.png",
+		"https://assets.leetcode.com/c.png",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("extractImageURLs = %d urls, want %d: %v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("url %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	if urls := extractImageURLs("no images here"); len(urls) != 0 {
+		t.Fatalf("extractImageURLs(no images) = %v, want empty", urls)
+	}
+}

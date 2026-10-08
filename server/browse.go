@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/thomhuang/local-leetcode/internal/assistant"
 	"github.com/thomhuang/local-leetcode/internal/question"
@@ -55,6 +57,7 @@ type browseModel struct {
 	textTitle     string
 	textLines     []string
 	textOffset    int
+	textImages    []string
 	lastResult    string
 	busy          bool
 	message       string
@@ -162,7 +165,7 @@ func (m browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case statementMsg:
 		m.busy = false
-		m.showText(msg.title, m.renderResult(msg.text, msg.err))
+		m.showStatement(msg.title, msg.text, msg.err)
 		return m, nil
 	case importResultMsg:
 		m.busy = false
@@ -299,6 +302,8 @@ func (m browseModel) handleTextKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.textOffset = 0
 	case "end":
 		m.textOffset = len(m.textLines)
+	case "i":
+		m.openImages()
 	}
 	m.clampTextOffset()
 	return m, nil
@@ -478,7 +483,83 @@ func (m *browseModel) showText(title, body string) {
 	body = strings.ReplaceAll(body, "\r\n", "\n")
 	m.textLines = strings.Split(body, "\n")
 	m.textOffset = 0
+	m.textImages = nil
 	m.mode = modeText
+}
+
+// showStatement renders a problem's Markdown statement for the text view. On a
+// render failure it falls back to showing the raw Markdown so the content is
+// never lost.
+func (m *browseModel) showStatement(title, markdown string, err error) {
+	images := extractImageURLs(markdown)
+	if err != nil {
+		m.showText(title, m.renderResult(markdown, err))
+		m.textImages = images
+		return
+	}
+	rendered, renderErr := renderMarkdown(markdown, termWidth(m.width))
+	if renderErr != nil {
+		m.app.log().Warn("statement.render", "markdown render failed", "error", renderErr.Error())
+		m.showText(title, markdown)
+		m.textImages = images
+		return
+	}
+	m.showText(title, rendered)
+	m.textImages = images
+}
+
+// imageLinkRe matches Markdown image links and captures their URL. LeetCode
+// statements store diagrams as `![](url)` with no alt text.
+var imageLinkRe = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)\)`)
+
+// extractImageURLs returns the deduplicated image URLs referenced by a Markdown
+// document, in order of first appearance.
+func extractImageURLs(markdown string) []string {
+	matches := imageLinkRe.FindAllStringSubmatch(markdown, -1)
+	seen := make(map[string]bool, len(matches))
+	urls := make([]string, 0, len(matches))
+	for _, m := range matches {
+		if len(m) > 1 && m[1] != "" && !seen[m[1]] {
+			seen[m[1]] = true
+			urls = append(urls, m[1])
+		}
+	}
+	return urls
+}
+
+// openImages opens every image referenced by the current statement in the
+// default application (the browser, for these URLs).
+func (m *browseModel) openImages() {
+	if len(m.textImages) == 0 {
+		return
+	}
+	for _, url := range m.textImages {
+		if err := openInDefaultApp(url); err != nil {
+			m.app.log().Error("statement.image", "open failed", "url", url, "error", err.Error())
+		}
+	}
+	m.app.log().Info("statement.image", "opened images", "count", len(m.textImages))
+}
+
+// renderMarkdown renders Markdown to ANSI-styled terminal output, word-wrapped
+// to width, using glamour's auto-detected style.
+func renderMarkdown(markdown string, width int) (string, error) {
+	if width <= 0 {
+		width = 80
+	}
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(width),
+	)
+	if err != nil {
+		return "", err
+	}
+	defer renderer.Close()
+	rendered, err := renderer.Render(markdown)
+	if err != nil {
+		return "", err
+	}
+	return strings.Trim(rendered, "\n"), nil
 }
 
 func (m browseModel) testCmd() tea.Cmd {
@@ -662,7 +743,11 @@ func (m browseModel) textView() string {
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
-	b.WriteString(clipStyled(dimStyle.Render("↑/↓ scroll · esc back"), width))
+	footer := "↑/↓ scroll · esc back"
+	if len(m.textImages) > 0 {
+		footer = fmt.Sprintf("↑/↓ scroll · i open images (%d) · esc back", len(m.textImages))
+	}
+	b.WriteString(clipStyled(dimStyle.Render(footer), width))
 	return b.String()
 }
 
