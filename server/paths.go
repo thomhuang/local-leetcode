@@ -12,6 +12,7 @@ const (
 	allProblemsFile = outputDir + "/all_problems.json"
 	logFile         = outputDir + "/local_leetcode_logs.txt"
 	assistantDir    = outputDir + "/assistant"
+	chatLogsDir     = outputDir + "/chat_logs"
 
 	// os.ModeDir carries no permission bits, so MkdirAll(path, os.ModeDir)
 	// creates a 0000 directory on Unix. Use explicit permissions instead.

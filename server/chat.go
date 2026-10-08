@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -184,6 +186,8 @@ func (m chatModel) handleKey(msg tea.KeyMsg) (chatModel, tea.Cmd) {
 		m.clampScroll()
 	case tea.KeyCtrlR:
 		m.cycleEffort()
+	case tea.KeyCtrlE:
+		m.dumpTranscript()
 	case tea.KeySpace:
 		m.input += " "
 	case tea.KeyRunes:
@@ -572,6 +576,59 @@ func runeLen(s string) int {
 	return utf8.RuneCountInString(s)
 }
 
+// dumpTranscript writes the current conversation to a timestamped markdown file
+// under chatLogsDir and reports the path in the status line.
+func (m *chatModel) dumpTranscript() {
+	if len(m.turns) == 0 {
+		m.status = "Nothing to export yet."
+		return
+	}
+
+	var b strings.Builder
+	b.WriteString("# " + m.title + "\n\n")
+	b.WriteString("Exported " + time.Now().Format(time.RFC3339) + "\n\n")
+	for _, turn := range m.turns {
+		if strings.TrimSpace(turn.text) == "" {
+			continue
+		}
+		b.WriteString("## " + turn.role + "\n\n")
+		b.WriteString(turn.text + "\n\n")
+	}
+
+	name := chatFileName(m.title) + ".md"
+	if err := os.MkdirAll(chatLogsDir, dirPerm); err != nil {
+		m.app.log().Error("chat.export", "mkdir failed", "dir", chatLogsDir, "error", err.Error())
+		m.status = "Export failed: " + err.Error()
+		return
+	}
+	path := filepath.Join(chatLogsDir, name)
+	if err := os.WriteFile(path, []byte(b.String()), filePerm); err != nil {
+		m.app.log().Error("chat.export", "write failed", "path", path, "error", err.Error())
+		m.status = "Export failed: " + err.Error()
+		return
+	}
+	m.app.log().Info("chat.export", "conversation exported", "path", path, "turns", len(m.turns))
+	m.status = "Exported to " + filepath.ToSlash(path)
+}
+
+// chatFileName turns a problem title such as "1. Two Sum" into a filename-safe
+// slug like "1-two-sum".
+func chatFileName(title string) string {
+	lower := strings.ToLower(title)
+	var b strings.Builder
+	prevDash := false
+	for _, r := range lower {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			prevDash = false
+		} else if !prevDash {
+			b.WriteByte('-')
+			prevDash = true
+		}
+	}
+	return strings.Trim(b.String(), "-")
+}
+
 func (m chatModel) statusLine() string {
 	if m.status != "" {
 		return m.status
@@ -584,9 +641,9 @@ func (m chatModel) statusLine() string {
 
 func (m chatModel) helpText() string {
 	if m.streaming {
-		return "streaming… · ctrl+r effort · esc cancel · ↑/↓ scroll"
+		return "streaming… · ctrl+r effort · ctrl+e export · esc cancel · ↑/↓ scroll"
 	}
-	return "enter send · ctrl+r effort · esc back · ↑/↓ scroll"
+	return "enter send · ctrl+r effort · ctrl+e export · esc back · ↑/↓ scroll"
 }
 
 // helpLines word-wraps the footer help to the view width, so a narrow window
