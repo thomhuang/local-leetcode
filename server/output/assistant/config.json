@@ -2,7 +2,7 @@
   "model": "deepseek-flash",
   "base_url": "https://api.deepseek.com",
   "reasoning_effort": "medium",
-  "thinking": true,
+  "thinking": false,
   "max_tokens": 8192,
   "temperature": 1
 }
