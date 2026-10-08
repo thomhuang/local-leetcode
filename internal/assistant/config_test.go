@@ -3,12 +3,14 @@ package assistant
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
-func TestLoadCreatesDefaults(t *testing.T) {
+func TestLoadCreatesConfigDefault(t *testing.T) {
 	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, promptFileName), []byte("tutor prompt"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg, prompt, err := Load(dir)
 	if err != nil {
@@ -23,14 +25,18 @@ func TestLoadCreatesDefaults(t *testing.T) {
 	if !cfg.Thinking {
 		t.Fatalf("thinking should default to enabled")
 	}
-	if !strings.Contains(prompt, "tutor") {
-		t.Fatalf("default prompt unexpected: %q", prompt)
+	if prompt != "tutor prompt" {
+		t.Fatalf("prompt = %q, want custom", prompt)
 	}
+	if _, err := os.Stat(filepath.Join(dir, configFileName)); err != nil {
+		t.Fatalf("expected %s to be created: %v", configFileName, err)
+	}
+}
 
-	for _, name := range []string{configFileName, promptFileName} {
-		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
-			t.Fatalf("expected %s to be created: %v", name, err)
-		}
+func TestLoadMissingPromptErrors(t *testing.T) {
+	dir := t.TempDir()
+	if _, _, err := Load(dir); err == nil {
+		t.Fatal("Load should fail when system_prompt.md is missing")
 	}
 }
 
@@ -70,6 +76,9 @@ func TestSaveConfigRoundTrip(t *testing.T) {
 
 	if err := SaveConfig(dir, want); err != nil {
 		t.Fatalf("SaveConfig: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, promptFileName), []byte("prompt"), 0o644); err != nil {
+		t.Fatalf("write prompt: %v", err)
 	}
 	got, _, err := Load(dir)
 	if err != nil {

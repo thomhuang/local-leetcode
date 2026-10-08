@@ -125,10 +125,11 @@ Running with Bitwarden is optional. When the key is not set, the main menu shows
 a banner and pressing `a` on a problem explains how to configure it.
 
 The model and thinking settings live in `server/output/assistant/config.json`,
-and the system prompt lives in `server/output/assistant/system_prompt.md`. Both
-are created with defaults the first time you open the assistant and are tracked
-in git, so you can tune the prompt without touching Go code. The default model
-is `deepseek-flash`; `deepseek-v4-pro` is also available.
+and the system prompt lives in `server/output/assistant/system_prompt.md`. The
+config file is created with defaults the first time you open the assistant, and
+both files are tracked in git, so you can tune the prompt without touching Go
+code. The default model is `deepseek-flash`; `deepseek-v4-pro` is also
+available.
 
 ## Debugging
 
