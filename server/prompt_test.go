@@ -28,6 +28,13 @@ func TestPrepareSubmission(t *testing.T) {
 			want:        "func subsets(nums []int) [][]int {}\n",
 		},
 		{
+			name: "provided TreeNode",
+			source: "package balanced_binary_tree\r\n\r\ntype TreeNode struct {\r\n\tVal   int\r\n\tLeft  *TreeNode\r\n\tRight *TreeNode\r\n}\r\n\r\n" +
+				"/**\r\n * type TreeNode struct {\r\n *     Val int\r\n * }\r\n */\r\ntype helper struct{}\r\n\r\nfunc isBalanced(root *TreeNode) bool {}\r\n",
+			packageName: "balanced_binary_tree",
+			want:        "/**\r\n * type TreeNode struct {\r\n *     Val int\r\n * }\r\n */\r\ntype helper struct{}\r\n\r\nfunc isBalanced(root *TreeNode) bool {}\r\n",
+		},
+		{
 			name:        "different package",
 			source:      "package other\n\nfunc subsets(nums []int) [][]int {}\n",
 			packageName: "subsets",

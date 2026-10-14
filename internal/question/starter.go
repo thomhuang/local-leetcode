@@ -84,6 +84,46 @@ func insertCommentedTypeDefinitions(source string) string {
 	return insertAfterFirstLine(source, additions.String())
 }
 
+// RemoveProvidedTypes removes type declarations that the LeetCode judge
+// already supplies, which are the types named in a commented-out definition.
+// The judge rejects a second declaration of the same type.
+func RemoveProvidedTypes(source string) string {
+	provided := make(map[string]bool)
+	for _, block := range extractCommentedTypes(source) {
+		provided[block.name] = true
+	}
+	if len(provided) == 0 {
+		return source
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", source, 0)
+	if err != nil {
+		return source
+	}
+
+	var out strings.Builder
+	last := 0
+	for _, decl := range file.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || gen.Tok != token.TYPE || len(gen.Specs) != 1 {
+			continue
+		}
+		if !provided[gen.Specs[0].(*ast.TypeSpec).Name.Name] {
+			continue
+		}
+		start := fset.Position(gen.Pos()).Offset
+		end := fset.Position(gen.End()).Offset
+		for end < len(source) && (source[end] == '\n' || source[end] == '\r') {
+			end++
+		}
+		out.WriteString(source[last:start])
+		last = end
+	}
+	out.WriteString(source[last:])
+	return out.String()
+}
+
 // declaredTypes lists the type names a file actually declares. Comments are
 // ignored so a commented-out definition does not count as a declaration.
 func declaredTypes(source string) map[string]bool {

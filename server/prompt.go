@@ -1,16 +1,22 @@
 package main
 
-import "strings"
+import (
+	"strings"
 
-// prepareSubmission strips the local package clause from a solution file so it
-// can be sent to the LeetCode judge.
+	"github.com/thomhuang/local-leetcode/internal/question"
+)
+
+// prepareSubmission strips the local package clause and the node types that
+// the judge already supplies from a solution file so it can be sent to the
+// LeetCode judge.
 func prepareSubmission(source, packageName string) string {
-	packageLine, code, found := strings.Cut(source, "\n")
+	packageLine, _, found := strings.Cut(source, "\n")
 	packageLine = strings.TrimSpace(strings.TrimPrefix(packageLine, "\uFEFF"))
 	if !found || packageLine != "package "+packageName {
 		return source
 	}
 
+	_, code, _ := strings.Cut(question.RemoveProvidedTypes(source), "\n")
 	return strings.TrimLeft(code, "\r\n")
 }
 
