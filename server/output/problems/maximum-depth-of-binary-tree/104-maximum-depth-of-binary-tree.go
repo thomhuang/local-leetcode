@@ -1,11 +1,5 @@
 package maximum_depth_of_binary_tree
 
-type TreeNode struct {
-	Val   int
-	Left  *TreeNode
-	Right *TreeNode
-}
-
 /**
  * Definition for a binary tree node.
  * type TreeNode struct {
@@ -15,6 +9,11 @@ type TreeNode struct {
  * }
  */
 func maxDepth(root *TreeNode) int {
-	panic("not implemented")
+	// if node is nil, no depth ...
+	if root == nil {
+		return 0
+	}
 
+	// keep traversing left/right, take the max of either subtree ...
+	return 1 + max(maxDepth(root.Left), maxDepth(root.Right))
 }

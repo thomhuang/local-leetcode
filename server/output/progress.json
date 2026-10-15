@@ -47,9 +47,17 @@
     "status": "accepted",
     "at": "2026-10-14T10:17:06.1836115-07:00"
   },
+  "find-minimum-in-rotated-sorted-array": {
+    "status": "accepted",
+    "at": "2026-10-11T12:53:41.3224273-07:00"
+  },
   "group-anagrams": {
     "status": "accepted",
     "at": "2026-09-29T19:03:18.7438253-07:00"
+  },
+  "invert-binary-tree": {
+    "status": "accepted",
+    "at": "2026-10-12T19:12:35.6420071-07:00"
   },
   "koko-eating-bananas": {
     "status": "accepted",
@@ -67,6 +75,14 @@
     "status": "accepted",
     "at": "2026-10-14T14:57:32.5417267-07:00"
   },
+  "maximum-depth-of-binary-tree": {
+    "status": "accepted",
+    "at": "2026-10-12T19:14:19.0120836-07:00"
+  },
+  "merge-two-sorted-lists": {
+    "status": "accepted",
+    "at": "2026-10-12T19:32:28.1946925-07:00"
+  },
   "min-stack": {
     "status": "accepted",
     "at": "2026-10-09T13:24:40.7048646-07:00"
@@ -79,6 +95,10 @@
     "status": "accepted",
     "at": "2026-09-29T20:06:02.6627113-07:00"
   },
+  "reverse-linked-list": {
+    "status": "accepted",
+    "at": "2026-10-12T19:03:16.2646132-07:00"
+  },
   "same-tree": {
     "status": "accepted",
     "at": "2026-10-14T11:53:36.7055566-07:00"
@@ -87,9 +107,17 @@
     "status": "accepted",
     "at": "2026-10-10T13:39:21.4385995-07:00"
   },
+  "search-in-rotated-sorted-array": {
+    "status": "accepted",
+    "at": "2026-10-12T17:43:37.7008889-07:00"
+  },
   "subtree-of-another-tree": {
     "status": "accepted",
     "at": "2026-10-14T13:43:59.1746254-07:00"
+  },
+  "time-based-key-value-store": {
+    "status": "accepted",
+    "at": "2026-10-12T18:27:11.0086019-07:00"
   },
   "top-k-frequent-elements": {
     "status": "accepted",
