@@ -47,6 +47,10 @@
     "status": "accepted",
     "at": "2026-10-14T10:17:06.1836115-07:00"
   },
+  "find-minimum-in-rotated-sorted-array": {
+    "status": "accepted",
+    "at": "2026-10-20T09:41:51.0359239-07:00"
+  },
   "group-anagrams": {
     "status": "accepted",
     "at": "2026-09-29T19:03:18.7438253-07:00"
@@ -54,6 +58,10 @@
   "koko-eating-bananas": {
     "status": "accepted",
     "at": "2026-10-10T17:04:17.586385-07:00"
+  },
+  "linked-list-cycle": {
+    "status": "accepted",
+    "at": "2026-10-20T13:39:20.7900272-07:00"
   },
   "longest-consecutive-sequence": {
     "status": "accepted",
@@ -67,6 +75,14 @@
     "status": "accepted",
     "at": "2026-10-14T14:57:32.5417267-07:00"
   },
+  "median-of-two-sorted-arrays": {
+    "status": "accepted",
+    "at": "2026-10-20T11:40:51.8445966-07:00"
+  },
+  "merge-two-sorted-lists": {
+    "status": "accepted",
+    "at": "2026-10-20T13:29:10.6117891-07:00"
+  },
   "min-stack": {
     "status": "accepted",
     "at": "2026-10-09T13:24:40.7048646-07:00"
@@ -79,6 +95,14 @@
     "status": "accepted",
     "at": "2026-09-29T20:06:02.6627113-07:00"
   },
+  "reorder-list": {
+    "status": "accepted",
+    "at": "2026-10-20T14:54:36.8209992-07:00"
+  },
+  "reverse-linked-list": {
+    "status": "accepted",
+    "at": "2026-10-20T13:21:03.3924846-07:00"
+  },
   "same-tree": {
     "status": "accepted",
     "at": "2026-10-14T11:53:36.7055566-07:00"
@@ -87,9 +111,17 @@
     "status": "accepted",
     "at": "2026-10-10T13:39:21.4385995-07:00"
   },
+  "search-in-rotated-sorted-array": {
+    "status": "accepted",
+    "at": "2026-10-20T10:28:16.1931528-07:00"
+  },
   "subtree-of-another-tree": {
     "status": "accepted",
     "at": "2026-10-14T13:43:59.1746254-07:00"
+  },
+  "time-based-key-value-store": {
+    "status": "accepted",
+    "at": "2026-10-20T10:57:55.3302973-07:00"
   },
   "top-k-frequent-elements": {
     "status": "accepted",
@@ -122,5 +154,9 @@
   "valid-sudoku": {
     "status": "accepted",
     "at": "2026-09-29T21:12:17.4244849-07:00"
+  },
+  "validate-binary-search-tree": {
+    "status": "accepted",
+    "at": "2026-10-19T11:39:02.7553477-07:00"
   }
 }
