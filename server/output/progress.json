@@ -55,6 +55,10 @@
     "status": "accepted",
     "at": "2026-09-29T19:03:18.7438253-07:00"
   },
+  "invert-binary-tree": {
+    "status": "accepted",
+    "at": "2026-10-12T19:12:35.6420071-07:00"
+  },
   "koko-eating-bananas": {
     "status": "accepted",
     "at": "2026-10-10T17:04:17.586385-07:00"
@@ -74,6 +78,10 @@
   "lowest-common-ancestor-of-a-binary-search-tree": {
     "status": "accepted",
     "at": "2026-10-14T14:57:32.5417267-07:00"
+  },
+  "maximum-depth-of-binary-tree": {
+    "status": "accepted",
+    "at": "2026-10-12T19:14:19.0120836-07:00"
   },
   "median-of-two-sorted-arrays": {
     "status": "accepted",
