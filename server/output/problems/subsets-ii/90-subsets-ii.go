@@ -2,6 +2,11 @@ package subsets_ii
 
 import "sort"
 
+/*
+	Follows the same idea as subsets I, and adds the additional logic
+	that was a part of Combinations II to ensure that we don't repeat
+	subsets as a result of duplicate elements!
+*/
 func subsetsWithDup(nums []int) [][]int {
 	res := make([][]int, 0)
 

@@ -1,5 +1,11 @@
 package palindrome_partitioning
 
+/*
+	the backtracking here, is that in a given iteration, we will go from every
+	index from the next character from the past iteration and loop to the end of the
+	of 's' and if any of them are a palindrome, we will add it to our current path result,
+	and then pop it out after we're done for the backtracking!
+*/
 func partition(s string) [][]string {
 	res := make([][]string, 0)
 

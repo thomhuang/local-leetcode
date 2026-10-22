@@ -189,6 +189,56 @@ func TestBrowseChatReusesSessionForSameProblem(t *testing.T) {
 	}
 }
 
+func TestBrowseResetConfirmation(t *testing.T) {
+	m := testBrowseModel()
+	m.app = &App{}
+	m.mode = modeDetail
+	m.detailIndex = 0
+
+	// 'r' only enters confirmation when a starter file exists on disk; the
+	// fake slugs used by the test have no files.
+	if updated, cmd := m.Update(runeKey('r')); updated.(browseModel).confirmReset || cmd != nil {
+		t.Fatal("r with no starter file should not confirm or run a command")
+	}
+
+	// 'y' confirms: it clears the flag, marks busy, and returns the reset cmd.
+	m.confirmReset = true
+	updated, cmd := m.Update(runeKey('y'))
+	m = updated.(browseModel)
+	if m.confirmReset {
+		t.Fatal("y should clear confirmReset")
+	}
+	if !m.busy {
+		t.Fatal("y should mark the model busy")
+	}
+	if cmd == nil {
+		t.Fatal("y should return the reset command")
+	}
+
+	// 'n' cancels without running anything.
+	m.busy = false
+	m.confirmReset = true
+	updated, cmd = m.Update(runeKey('n'))
+	m = updated.(browseModel)
+	if m.confirmReset || m.busy || cmd != nil {
+		t.Fatal("n should cancel the confirmation and run nothing")
+	}
+
+	// 'esc' also cancels.
+	m.confirmReset = true
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updated.(browseModel)
+	if m.confirmReset {
+		t.Fatal("esc should cancel the confirmation")
+	}
+
+	// The confirmation prompt is rendered in the detail view.
+	m.confirmReset = true
+	if view := m.View(); !strings.Contains(view, "Reset implementation to starter? (y/n)") {
+		t.Fatalf("detail view missing confirmation prompt:\n%s", view)
+	}
+}
+
 func TestExtractImageURLs(t *testing.T) {
 	markdown := "Intro\n\n![](https://assets.leetcode.com/a.png)\n\n**![](https://assets.leetcode.com/b.png)**\n\n![alt](https://assets.leetcode.com/c.png)\n\n![](https://assets.leetcode.com/a.png)\n"
 	got := extractImageURLs(markdown)

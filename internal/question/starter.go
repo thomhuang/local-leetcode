@@ -2,6 +2,7 @@ package question
 
 import (
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"strings"
@@ -15,12 +16,17 @@ const notImplemented = `panic("not implemented")`
 // its judge tolerates functions whose body is empty even when they return a
 // value. Locally those are "undefined" and "missing return" errors, so we add
 // the commented definitions back and give empty value-returning bodies a panic.
+// The result is run through gofmt so the inserted panic lands on its own,
+// properly indented line.
 func MakeStarterCompilable(source string) string {
 	if strings.TrimSpace(source) == "" {
 		return source
 	}
 	source = insertCommentedTypeDefinitions(source)
 	source = insertNotImplementedPanics(source)
+	if formatted, err := format.Source([]byte(source)); err == nil {
+		return string(formatted)
+	}
 	return source
 }
 
@@ -34,7 +40,10 @@ func insertNotImplementedPanics(source string) string {
 		return source
 	}
 
-	var offsets []int
+	type bodyRange struct {
+		start, end int
+	}
+	var ranges []bodyRange
 	ast.Inspect(file, func(node ast.Node) bool {
 		fn, ok := node.(*ast.FuncDecl)
 		if !ok || fn.Body == nil || len(fn.Body.List) != 0 {
@@ -43,14 +52,18 @@ func insertNotImplementedPanics(source string) string {
 		if fn.Type.Results == nil || len(fn.Type.Results.List) == 0 {
 			return true
 		}
-		offsets = append(offsets, fset.Position(fn.Body.Lbrace).Offset)
+		ranges = append(ranges, bodyRange{
+			start: fset.Position(fn.Body.Lbrace).Offset + 1,
+			end:   fset.Position(fn.Body.Rbrace).Offset,
+		})
 		return true
 	})
 
-	// Insert from the end so earlier offsets stay valid.
-	for i := len(offsets) - 1; i >= 0; i-- {
-		at := offsets[i] + 1
-		source = source[:at] + " " + notImplemented + " " + source[at:]
+	// Replace the whole body, from the end so earlier offsets stay valid. The
+	// empty body's whitespace is discarded so no blank line is left behind.
+	for i := len(ranges) - 1; i >= 0; i-- {
+		r := ranges[i]
+		source = source[:r.start] + "\n\t" + notImplemented + "\n" + source[r.end:]
 	}
 	return source
 }

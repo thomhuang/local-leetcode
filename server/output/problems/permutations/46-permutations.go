@@ -1,5 +1,16 @@
 package permutations
 
+/*
+	This is backtracking, but we have to fill out len(nums) for each valid path...
+
+	Notice that from the constraints that all the input integers within `nums` are unique
+	So, what we can do, is to iterate 0 -> n - 1, but in our given path
+	we need to keep track, at the given recurision level, what elements
+	we've used so far to not repeat in nums...
+
+	If, in our path, we have len(nums) elements, we've generated a permutation ...
+
+*/
 func permute(nums []int) [][]int {
 	res := make([][]int, 0)
 

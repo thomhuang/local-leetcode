@@ -113,6 +113,40 @@ func (app *App) setAccepted(slug string, accepted bool) error {
 	return app.Progress.Save()
 }
 
+// ResetProblem restores a problem's solution file to the starter stub fetched
+// fresh from LeetCode, and clears its accepted record so the problem is fully
+// re-opened.
+func (app *App) ResetProblem(problem question.ProblemSetProblem) (string, error) {
+	app.log().Info("problem.reset", "resetting solution", "id", problem.ID, "slug", problem.Slug)
+
+	ques, err := app.fetchQuestionWithRetry(problem.Slug)
+	if err != nil {
+		app.log().Error("problem.reset", "fetch failed", "slug", problem.Slug, "error", err.Error())
+		return "", fmt.Errorf("fetch question: %w", err)
+	}
+	if !hasProblemContent(ques) {
+		app.log().Warn("problem.reset", "no starter code", "slug", problem.Slug)
+		return "", fmt.Errorf("LeetCode returned no starter code for %s", problem.Slug)
+	}
+
+	target := starterFilePath(problemsDir, problem)
+	if target == "" {
+		target = problemsDir + "/" + ques.TitleSlug + "/" + ques.FrontEndQuestionId + "-" + ques.TitleSlug + ".go"
+	}
+	if err := os.WriteFile(target, []byte(question.MakeStarterCompilable(ques.CodeSnippet)), filePerm); err != nil {
+		app.log().Error("problem.reset", "write starter failed", "slug", problem.Slug, "path", target, "error", err.Error())
+		return "", fmt.Errorf("write starter file: %w", err)
+	}
+
+	if err := app.setAccepted(problem.Slug, false); err != nil {
+		app.log().Error("problem.reset", "clear accepted failed", "slug", problem.Slug, "error", err.Error())
+		return "", fmt.Errorf("clear accepted record: %w", err)
+	}
+
+	app.log().Info("problem.reset", "solution reset", "slug", problem.Slug, "path", target)
+	return fmt.Sprintf("Reset %s. %s to starter", ques.FrontEndQuestionId, ques.Title), nil
+}
+
 // AddQuestion fetches a single problem and saves its statement and starter file.
 func (app *App) AddQuestion(id int) (string, error) {
 	meta, ok := app.Questions[id]

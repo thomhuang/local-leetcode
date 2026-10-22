@@ -64,8 +64,8 @@ function that must return a value. Replace the panic with your solution.
 `server/output/ProblemSets/`. Move with the arrow keys, `enter` to open a
 problem, and `q`/`esc` to return to the prompt.
 Inside a problem you can test, submit, read the statement, open its `.go` file
-in your default editor (`o`), ask the assistant (`a`), import it, or mark it
-accepted.
+in your default editor (`o`), ask the assistant (`a`), import it, mark it
+accepted, or reset the implementation back to the starter stub (`r`).
 
 Each problem shows a status:
 
@@ -89,6 +89,10 @@ go run ./server -list neetcode-150 -category Graphs -status todo
 `server/output/progress.json` stores accepted problems by slug and is tracked in
 git. Submitting an accepted solution updates it automatically; you can also mark
 a problem accepted by hand with `m`.
+
+Resetting a problem (`r` on its detail screen) re-fetches the starter code from
+LeetCode, overwrites your solution file, and clears its accepted record. It asks
+for confirmation first because it discards your work.
 
 ## Assistant
 

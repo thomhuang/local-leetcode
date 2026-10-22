@@ -18,6 +18,16 @@ func TestMakeStarterCompilableAddsPanicToValueReturningBody(t *testing.T) {
 	assertParses(t, got)
 }
 
+func TestMakeStarterCompilableFormatsPanicBody(t *testing.T) {
+	source := "package subsets\n\nfunc subsets(nums []int) [][]int {\n    \n}\n"
+
+	got := MakeStarterCompilable(source)
+	want := "package subsets\n\nfunc subsets(nums []int) [][]int {\n\tpanic(\"not implemented\")\n}\n"
+	if got != want {
+		t.Fatalf("MakeStarterCompilable() = %q, want %q", got, want)
+	}
+}
+
 func TestMakeStarterCompilableLeavesVoidBody(t *testing.T) {
 	source := "package min_stack\n\ntype MinStack struct {\n    \n}\n\nfunc (this *MinStack) Push(value int)  {\n    \n}\n"
 

@@ -61,6 +61,7 @@ type browseModel struct {
 	lastResult    string
 	busy          bool
 	message       string
+	confirmReset  bool
 
 	chat     chatModel
 	chatSlug string
@@ -84,6 +85,11 @@ type statementMsg struct {
 
 type importResultMsg struct {
 	message string
+}
+
+type resetResultMsg struct {
+	message string
+	err     error
 }
 
 func newBrowseModel(app *App, set question.ProblemSet) browseModel {
@@ -173,6 +179,16 @@ func (m browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refresh()
 		m.message = msg.message
 		return m, nil
+	case resetResultMsg:
+		m.busy = false
+		m.confirmReset = false
+		m.refresh()
+		if msg.err != nil {
+			m.message = "Reset failed: " + msg.err.Error()
+		} else {
+			m.message = msg.message
+		}
+		return m, nil
 	case tea.KeyMsg:
 		if m.mode == modeChat {
 			if msg.String() == chatResetKey {
@@ -251,6 +267,22 @@ func (m browseModel) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m browseModel) handleDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.confirmReset {
+		switch msg.String() {
+		case "y":
+			m.confirmReset = false
+			m.message = ""
+			if !m.busy {
+				m.busy = true
+				return m, m.resetCmd()
+			}
+		case "n", "esc", "q", "ctrl+c":
+			m.confirmReset = false
+			m.message = ""
+		}
+		return m, nil
+	}
+
 	switch msg.String() {
 	case "esc", "q", "ctrl+c":
 		m.mode = modeList
@@ -287,6 +319,11 @@ func (m browseModel) handleDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "m":
 		m.toggleAccepted()
+	case "r":
+		if !m.busy && starterFilePath(problemsDir, m.rows[m.detailIndex].problem) != "" {
+			m.confirmReset = true
+			m.message = ""
+		}
 	}
 	return m, nil
 }
@@ -654,6 +691,14 @@ func (m browseModel) importCmd() tea.Cmd {
 	}
 }
 
+func (m browseModel) resetCmd() tea.Cmd {
+	problem := m.rows[m.detailIndex].problem
+	return func() tea.Msg {
+		message, err := m.app.ResetProblem(problem)
+		return resetResultMsg{message: message, err: err}
+	}
+}
+
 func (m browseModel) View() string {
 	switch m.mode {
 	case modeText:
@@ -758,8 +803,11 @@ func (m browseModel) detailView() string {
 	if row.state == stateAccepted {
 		mark = "m clear accepted"
 	}
-	b.WriteString(clipStyled(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "o open file", "a assistant", "i import", mark, "esc back"}, " · ")), width))
+	b.WriteString(clipStyled(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "o open file", "a assistant", "i import", "r reset", mark, "esc back"}, " · ")), width))
 
+	if m.confirmReset {
+		b.WriteString("\n\n" + dimStyle.Render("Reset implementation to starter? (y/n)"))
+	}
 	if m.busy {
 		b.WriteString("\n\n" + dimStyle.Render("working..."))
 	}
