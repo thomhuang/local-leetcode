@@ -77,9 +77,11 @@ Each problem shows a status:
 | `[p]` | Premium; content is locked |
 | `[?]` | In the set but not imported |
 
-Use `c` to cycle the category filter and `s` to cycle the status filter while
-browsing. The same checklist can be printed at the prompt with `list`, which is
-useful for piping or grepping:
+Press `c` to open the category filter menu and `s` to open the status filter
+menu while browsing (`space` toggles individual filter flags, `a` checks all or
+clears active flags, and `enter`/`esc` returns to the list). The same checklist
+can be printed at the prompt with `list`, which is useful for piping or
+grepping:
 
 ```
 go run ./server -list neetcode-150

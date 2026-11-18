@@ -31,7 +31,23 @@ const (
 	modeDetail
 	modeText
 	modeChat
+	modeFilterStatus
+	modeFilterCategory
 )
+
+var filterStates = []problemState{
+	stateTodo,
+	stateWritten,
+	stateAccepted,
+	statePremium,
+	stateMissing,
+}
+
+type filterOption struct {
+	label   string
+	checked bool
+	count   int
+}
 
 type browseRow struct {
 	category string
@@ -46,10 +62,12 @@ type browseModel struct {
 	rows    []browseRow
 	visible []int
 
-	cursor   int
-	offset   int
-	category string
-	status   string
+	cursor       int
+	offset       int
+	categories   map[string]bool
+	statuses     map[problemState]bool
+	filterCursor int
+	filterOffset int
 
 	width, height int
 	mode          browseMode
@@ -123,10 +141,10 @@ func (m *browseModel) refresh() {
 func (m *browseModel) applyFilter() {
 	m.visible = m.visible[:0]
 	for i, row := range m.rows {
-		if m.category != "" && row.category != m.category {
+		if !m.matchesCategory(row.category) {
 			continue
 		}
-		if m.status != "" && row.state.StatusKey() != m.status {
+		if !m.matchesStatus(row.state) {
 			continue
 		}
 		m.visible = append(m.visible, i)
@@ -147,6 +165,7 @@ func (m browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.clampOffset()
 		m.clampTextOffset()
+		m.clampFilterOffset()
 		return m, nil
 	case chatStreamReadyMsg, chatChunkMsg:
 		if m.mode != modeChat {
@@ -224,6 +243,8 @@ func (m browseModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleTextKey(msg)
 	case modeDetail:
 		return m.handleDetailKey(msg)
+	case modeFilterStatus, modeFilterCategory:
+		return m.handleFilterKey(msg)
 	default:
 		return m.handleListKey(msg)
 	}
@@ -257,9 +278,9 @@ func (m browseModel) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.lastResult = ""
 		}
 	case "c":
-		m.cycleCategory()
+		m.openCategoryFilter()
 	case "s":
-		m.cycleStatus()
+		m.openStatusFilter()
 	case "n":
 		m.nextTodo()
 	}
@@ -420,18 +441,341 @@ func (m *browseModel) clampTextOffset() {
 	}
 }
 
-func (m *browseModel) cycleCategory() {
-	options := append([]string{""}, categoryNames(m.set)...)
-	m.category = options[(indexOf(options, m.category)+1)%len(options)]
+func (m *browseModel) openCategoryFilter() {
+	m.mode = modeFilterCategory
+	m.filterCursor = 0
+	for i, name := range categoryNames(m.set) {
+		if m.categories[name] {
+			m.filterCursor = i
+			break
+		}
+	}
+	m.filterOffset = 0
+	m.clampFilterOffset()
+	m.message = ""
+}
+
+func (m *browseModel) openStatusFilter() {
+	m.mode = modeFilterStatus
+	m.filterCursor = 0
+	for i, state := range filterStates {
+		if m.statuses[state] {
+			m.filterCursor = i
+			break
+		}
+	}
+	m.filterOffset = 0
+	m.clampFilterOffset()
+	m.message = ""
+}
+
+func (m browseModel) handleFilterKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	count := m.filterOptionCount()
+	switch msg.String() {
+	case "esc", "q", "enter":
+		m.mode = modeList
+	case "ctrl+c":
+		return m, tea.Quit
+	case "s":
+		if m.mode == modeFilterStatus {
+			m.mode = modeList
+		} else {
+			m.openStatusFilter()
+		}
+	case "c":
+		if m.mode == modeFilterCategory {
+			m.mode = modeList
+		} else {
+			m.openCategoryFilter()
+		}
+	case "up", "k":
+		m.moveFilter(-1)
+	case "down", "j":
+		m.moveFilter(1)
+	case "pgup":
+		m.moveFilter(-m.filterViewHeight())
+	case "pgdown":
+		m.moveFilter(m.filterViewHeight())
+	case "home":
+		m.filterCursor = 0
+		m.clampFilterOffset()
+	case "end":
+		if count > 0 {
+			m.filterCursor = count - 1
+		}
+		m.clampFilterOffset()
+	case " ", "space", "x":
+		m.toggleFilterOption()
+	case "a":
+		m.toggleAllFilterOptions()
+	}
+	return m, nil
+}
+
+func (m *browseModel) moveFilter(delta int) {
+	count := m.filterOptionCount()
+	if count == 0 {
+		m.filterCursor = 0
+		m.filterOffset = 0
+		return
+	}
+	m.filterCursor += delta
+	if m.filterCursor < 0 {
+		m.filterCursor = 0
+	}
+	if m.filterCursor >= count {
+		m.filterCursor = count - 1
+	}
+	m.clampFilterOffset()
+}
+
+func (m browseModel) filterViewHeight() int {
+	h := m.height - 6
+	if h < 3 {
+		h = 3
+	}
+	return h
+}
+
+func (m *browseModel) clampFilterOffset() {
+	count := m.filterOptionCount()
+	if count == 0 {
+		m.filterOffset = 0
+		return
+	}
+	height := m.filterViewHeight()
+	if m.filterCursor < m.filterOffset {
+		m.filterOffset = m.filterCursor
+	}
+	if m.filterCursor >= m.filterOffset+height {
+		m.filterOffset = m.filterCursor - height + 1
+	}
+	maxOffset := count - height
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if m.filterOffset > maxOffset {
+		m.filterOffset = maxOffset
+	}
+	if m.filterOffset < 0 {
+		m.filterOffset = 0
+	}
+}
+
+func (m browseModel) filterOptionCount() int {
+	if m.mode == modeFilterStatus {
+		return len(filterStates)
+	}
+	return len(m.set.Categories)
+}
+
+func (m browseModel) filterOptions() []filterOption {
+	if m.mode == modeFilterStatus {
+		counts := make(map[problemState]int, len(filterStates))
+		for _, row := range m.rows {
+			if m.matchesCategory(row.category) {
+				counts[row.state]++
+			}
+		}
+		options := make([]filterOption, 0, len(filterStates))
+		for _, state := range filterStates {
+			options = append(options, filterOption{
+				label:   state.Label(),
+				checked: m.statuses[state],
+				count:   counts[state],
+			})
+		}
+		return options
+	}
+
+	counts := make(map[string]int, len(m.set.Categories))
+	for _, row := range m.rows {
+		if m.matchesStatus(row.state) {
+			counts[row.category]++
+		}
+	}
+	options := make([]filterOption, 0, len(m.set.Categories))
+	for _, cat := range m.set.Categories {
+		options = append(options, filterOption{
+			label:   cat.Name,
+			checked: m.categories[cat.Name],
+			count:   counts[cat.Name],
+		})
+	}
+	return options
+}
+
+func (m *browseModel) setCategoryFlag(category string, on bool) {
+	if !on {
+		delete(m.categories, category)
+		return
+	}
+	if m.categories == nil {
+		m.categories = make(map[string]bool)
+	}
+	m.categories[category] = true
+}
+
+func (m *browseModel) setStatusFlag(state problemState, on bool) {
+	if !on {
+		delete(m.statuses, state)
+		return
+	}
+	if m.statuses == nil {
+		m.statuses = make(map[problemState]bool)
+	}
+	m.statuses[state] = true
+}
+
+func (m *browseModel) toggleFilterOption() {
+	if m.mode == modeFilterStatus {
+		if m.filterCursor < 0 || m.filterCursor >= len(filterStates) {
+			return
+		}
+		state := filterStates[m.filterCursor]
+		next := !m.statuses[state]
+		m.setStatusFlag(state, next)
+		m.app.log().Debug("browse.filter", "status flag toggled", "status", state.StatusKey(), "enabled", next)
+	} else {
+		names := categoryNames(m.set)
+		if m.filterCursor < 0 || m.filterCursor >= len(names) {
+			return
+		}
+		name := names[m.filterCursor]
+		next := !m.categories[name]
+		m.setCategoryFlag(name, next)
+		m.app.log().Debug("browse.filter", "category flag toggled", "category", name, "enabled", next)
+	}
 	m.cursor, m.offset = 0, 0
 	m.applyFilter()
 }
 
-func (m *browseModel) cycleStatus() {
-	options := []string{"", "todo", "written", "accepted"}
-	m.status = options[(indexOf(options, m.status)+1)%len(options)]
+func (m *browseModel) toggleAllFilterOptions() {
+	if m.mode == modeFilterStatus {
+		if m.hasStatusFilter() {
+			m.statuses = nil
+		} else {
+			m.statuses = make(map[problemState]bool, len(filterStates))
+			for _, state := range filterStates {
+				m.statuses[state] = true
+			}
+		}
+	} else {
+		if m.hasCategoryFilter() {
+			m.categories = nil
+		} else {
+			names := categoryNames(m.set)
+			m.categories = make(map[string]bool, len(names))
+			for _, name := range names {
+				m.categories[name] = true
+			}
+		}
+	}
 	m.cursor, m.offset = 0, 0
 	m.applyFilter()
+}
+
+func (m browseModel) hasCategoryFilter() bool {
+	for _, on := range m.categories {
+		if on {
+			return true
+		}
+	}
+	return false
+}
+
+func (m browseModel) hasStatusFilter() bool {
+	for _, on := range m.statuses {
+		if on {
+			return true
+		}
+	}
+	return false
+}
+
+func (m browseModel) matchesCategory(category string) bool {
+	if !m.hasCategoryFilter() {
+		return true
+	}
+	return m.categories[category]
+}
+
+func (m browseModel) matchesStatus(state problemState) bool {
+	if !m.hasStatusFilter() {
+		return true
+	}
+	return m.statuses[state]
+}
+
+func (m browseModel) activeCategories() []string {
+	var selected []string
+	for _, cat := range m.set.Categories {
+		if m.categories[cat.Name] {
+			selected = append(selected, cat.Name)
+		}
+	}
+	return selected
+}
+
+func (m browseModel) activeStatuses() []problemState {
+	var selected []problemState
+	for _, state := range filterStates {
+		if m.statuses[state] {
+			selected = append(selected, state)
+		}
+	}
+	return selected
+}
+
+func (m browseModel) categoryFilterSummary() string {
+	selected := m.activeCategories()
+	if len(selected) == 0 || len(selected) == len(m.set.Categories) {
+		return "all"
+	}
+	if len(selected) == 1 {
+		return selected[0]
+	}
+	return fmt.Sprintf("%d selected", len(selected))
+}
+
+func (m browseModel) statusFilterSummary() string {
+	selected := m.activeStatuses()
+	if len(selected) == 0 || len(selected) == len(filterStates) {
+		return "all"
+	}
+	if len(selected) == 1 {
+		return selected[0].StatusKey()
+	}
+	if len(selected) == 2 {
+		return selected[0].StatusKey() + ", " + selected[1].StatusKey()
+	}
+	return fmt.Sprintf("%d selected", len(selected))
+}
+
+func (m browseModel) filterSelectionDetail() string {
+	if m.mode == modeFilterStatus {
+		selected := m.activeStatuses()
+		if len(selected) == 0 {
+			return "all (none checked = show all)"
+		}
+		if len(selected) == len(filterStates) {
+			return "all"
+		}
+		labels := make([]string, len(selected))
+		for i, s := range selected {
+			labels[i] = s.Label()
+		}
+		return strings.Join(labels, ", ")
+	}
+
+	selected := m.activeCategories()
+	if len(selected) == 0 {
+		return "all (none checked = show all)"
+	}
+	if len(selected) == len(m.set.Categories) {
+		return "all"
+	}
+	return strings.Join(selected, ", ")
 }
 
 func (m *browseModel) nextTodo() {
@@ -707,6 +1051,8 @@ func (m browseModel) View() string {
 		return m.detailView()
 	case modeChat:
 		return m.chat.View()
+	case modeFilterStatus, modeFilterCategory:
+		return m.filterView()
 	default:
 		return m.listView()
 	}
@@ -728,44 +1074,48 @@ func (m browseModel) listView() string {
 		}
 	}
 
-	b.WriteString(titleStyle.Render(m.set.Name))
-	b.WriteString(dimStyle.Render(fmt.Sprintf("  ·  %d/%d accepted", accepted, total)))
+	b.WriteString(clipStyled(
+		titleStyle.Render(m.set.Name)+dimStyle.Render(fmt.Sprintf("  ·  %d/%d accepted", accepted, total)),
+		width,
+	))
 	b.WriteString("\n")
 	b.WriteString(progressBar(accepted, total, barWidth))
 	b.WriteString("\n")
 	b.WriteString(dimStyle.Render(strings.Repeat("─", width)))
 	b.WriteString("\n")
 
-	category := "all"
-	if m.category != "" {
-		category = m.category
-	}
-	status := "all"
-	if m.status != "" {
-		status = m.status
-	}
+	category := m.categoryFilterSummary()
+	status := m.statusFilterSummary()
 	b.WriteString(clipStyled(dimStyle.Render(fmt.Sprintf("category: %s (c)   status: %s (s)   showing %d", category, status, len(m.visible))), width))
 	b.WriteString("\n\n")
 
 	height := m.listViewHeight()
-	end := m.offset + height
-	if end > len(m.visible) {
-		end = len(m.visible)
-	}
-	showCategory := m.category == ""
-	for pos := m.offset; pos < end; pos++ {
-		row := m.rows[m.visible[pos]]
-		line := fmt.Sprintf("%s %s", coloredSymbol(row.state), problemRowText(row.problem, row.category, showCategory))
-		if pos == m.cursor {
-			line = cursorStyle.Render("> ") + line
-		} else {
-			line = "  " + line
+	if len(m.visible) == 0 {
+		b.WriteString(clipStyled(dimStyle.Render("  No problems match the current filters."), width))
+		b.WriteString("\n")
+		for pos := 1; pos < height; pos++ {
+			b.WriteString("\n")
 		}
-		b.WriteString(clipStyled(line, width))
-		b.WriteString("\n")
-	}
-	for pos := end - m.offset; pos < height; pos++ {
-		b.WriteString("\n")
+	} else {
+		end := m.offset + height
+		if end > len(m.visible) {
+			end = len(m.visible)
+		}
+		showCategory := len(m.activeCategories()) != 1
+		for pos := m.offset; pos < end; pos++ {
+			row := m.rows[m.visible[pos]]
+			line := fmt.Sprintf("%s %s", coloredSymbol(row.state), problemRowText(row.problem, row.category, showCategory))
+			if pos == m.cursor {
+				line = cursorStyle.Render("> ") + line
+			} else {
+				line = "  " + line
+			}
+			b.WriteString(clipStyled(line, width))
+			b.WriteString("\n")
+		}
+		for pos := end - m.offset; pos < height; pos++ {
+			b.WriteString("\n")
+		}
 	}
 
 	if m.message != "" {
@@ -778,6 +1128,84 @@ func (m browseModel) listView() string {
 	if m.busy {
 		footer += "   working..."
 	}
+	b.WriteString(clipStyled(dimStyle.Render(footer), width))
+	return b.String()
+}
+
+func (m browseModel) filterView() string {
+	var b strings.Builder
+	width := termWidth(m.width)
+
+	title := "Filter by category"
+	hasAny := m.hasCategoryFilter()
+	switchHint := "s status"
+	if m.mode == modeFilterStatus {
+		title = "Filter by status"
+		hasAny = m.hasStatusFilter()
+		switchHint = "c category"
+	}
+
+	b.WriteString(clipStyled(
+		titleStyle.Render(title)+dimStyle.Render(fmt.Sprintf("  ·  showing %d/%d", len(m.visible), len(m.rows))),
+		width,
+	))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render(strings.Repeat("─", width)))
+	b.WriteString("\n")
+	b.WriteString(clipStyled(dimStyle.Render("active: "+m.filterSelectionDetail()), width))
+	b.WriteString("\n\n")
+
+	options := m.filterOptions()
+	labelWidth := 0
+	for _, opt := range options {
+		if n := len([]rune(opt.label)); n > labelWidth {
+			labelWidth = n
+		}
+	}
+	maxLabel := width - 11
+	if maxLabel < 4 {
+		maxLabel = 4
+	}
+	if maxLabel > 46 {
+		maxLabel = 46
+	}
+	if labelWidth > maxLabel {
+		labelWidth = maxLabel
+	}
+
+	height := m.filterViewHeight()
+	end := m.filterOffset + height
+	if end > len(options) {
+		end = len(options)
+	}
+	for pos := m.filterOffset; pos < end; pos++ {
+		opt := options[pos]
+		flag := dimStyle.Render("[ ]")
+		if opt.checked {
+			flag = accentStyle.Render("[x]")
+		}
+		label := fitLine(opt.label, labelWidth)
+		padded := fmt.Sprintf("%-*s", labelWidth, label)
+		count := dimStyle.Render(fmt.Sprintf("%4d", opt.count))
+		line := fmt.Sprintf("%s %s %s", flag, padded, count)
+		if pos == m.filterCursor {
+			line = cursorStyle.Render("> ") + line
+		} else {
+			line = "  " + line
+		}
+		b.WriteString(clipStyled(line, width))
+		b.WriteString("\n")
+	}
+	for pos := end - m.filterOffset; pos < height; pos++ {
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	allAction := "a check all"
+	if hasAny {
+		allAction = "a clear"
+	}
+	footer := fmt.Sprintf("↑/↓ move · space toggle · %s · %s · enter/esc done", allAction, switchHint)
 	b.WriteString(clipStyled(dimStyle.Render(footer), width))
 	return b.String()
 }

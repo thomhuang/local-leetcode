@@ -37,42 +37,111 @@ func TestBrowseApplyFilter(t *testing.T) {
 		t.Fatalf("unfiltered visible = %d, want 3", len(m.visible))
 	}
 
-	m.category = "A"
+	m.setCategoryFlag("A", true)
 	m.applyFilter()
 	if len(m.visible) != 2 {
 		t.Fatalf("category filter visible = %d, want 2", len(m.visible))
 	}
 
-	m.category = ""
-	m.status = "todo"
+	// Multi-select categories: A + B includes all 3 rows.
+	m.setCategoryFlag("B", true)
+	m.applyFilter()
+	if len(m.visible) != 3 {
+		t.Fatalf("multi-category filter visible = %d, want 3", len(m.visible))
+	}
+
+	m.categories = nil
+	m.setStatusFlag(stateTodo, true)
 	m.applyFilter()
 	if len(m.visible) != 2 {
 		t.Fatalf("status filter visible = %d, want 2", len(m.visible))
 	}
 
-	m.category = "A"
+	// Multi-select statuses: todo + written includes all 3 rows.
+	m.setStatusFlag(stateWritten, true)
+	m.applyFilter()
+	if len(m.visible) != 3 {
+		t.Fatalf("multi-status filter visible = %d, want 3", len(m.visible))
+	}
+
+	m.statuses = nil
+	m.setStatusFlag(stateTodo, true)
+	m.setCategoryFlag("A", true)
 	m.applyFilter()
 	if len(m.visible) != 1 || m.rows[m.visible[0]].problem.ID != 1 {
 		t.Fatalf("combined filter visible = %v, want just problem 1", m.visible)
 	}
 }
 
-func TestBrowseCycleFilters(t *testing.T) {
+func TestBrowseFilterMenusToggleAndClear(t *testing.T) {
 	m := testBrowseModel()
+	m.app = &App{}
 
-	m.cycleCategory()
-	if m.category != "A" {
-		t.Fatalf("cycleCategory() = %q, want A", m.category)
+	// 's' opens the status filter menu.
+	updated, _ := m.Update(runeKey('s'))
+	m = updated.(browseModel)
+	if m.mode != modeFilterStatus {
+		t.Fatalf("mode after 's' = %v, want modeFilterStatus", m.mode)
 	}
-	m.category = "B"
-	m.cycleCategory()
-	if m.category != "" {
-		t.Fatalf("cycleCategory() wrapped to %q, want all", m.category)
+	if view := m.View(); !strings.Contains(view, "Filter by status") {
+		t.Fatalf("status filter view missing heading:\n%s", view)
 	}
 
-	m.cycleStatus()
-	if m.status != "todo" {
-		t.Fatalf("cycleStatus() = %q, want todo", m.status)
+	// Space toggles index 0 (stateTodo); moving down and pressing space toggles stateWritten.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	m = updated.(browseModel)
+	if !m.statuses[stateTodo] || len(m.visible) != 2 {
+		t.Fatalf("after toggling todo: statuses=%v, visible=%d", m.statuses, len(m.visible))
+	}
+
+	updated, _ = m.Update(runeKey('j'))
+	m = updated.(browseModel)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	m = updated.(browseModel)
+	if !m.statuses[stateWritten] || len(m.visible) != 3 {
+		t.Fatalf("after toggling written: statuses=%v, visible=%d", m.statuses, len(m.visible))
+	}
+	if got := m.statusFilterSummary(); got != "todo, written" {
+		t.Fatalf("statusFilterSummary() = %q, want \"todo, written\"", got)
+	}
+
+	// 'c' switches directly from status filter to category filter.
+	updated, _ = m.Update(runeKey('c'))
+	m = updated.(browseModel)
+	if m.mode != modeFilterCategory {
+		t.Fatalf("mode after 'c' in status filter = %v, want modeFilterCategory", m.mode)
+	}
+	if view := m.View(); !strings.Contains(view, "Filter by category") {
+		t.Fatalf("category filter view missing heading:\n%s", view)
+	}
+
+	// Toggle category "A" with space, leaving only A's todo+written problems (2).
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	m = updated.(browseModel)
+	if !m.categories["A"] || len(m.visible) != 2 {
+		t.Fatalf("after toggling category A: categories=%v, visible=%d", m.categories, len(m.visible))
+	}
+	if got := m.categoryFilterSummary(); got != "A" {
+		t.Fatalf("categoryFilterSummary() = %q, want A", got)
+	}
+
+	// 'a' clears active flags when any are checked; pressing 'a' again checks all.
+	updated, _ = m.Update(runeKey('a'))
+	m = updated.(browseModel)
+	if m.hasCategoryFilter() {
+		t.Fatalf("expected 'a' to clear category flags, got %v", m.categories)
+	}
+	updated, _ = m.Update(runeKey('a'))
+	m = updated.(browseModel)
+	if len(m.activeCategories()) != 2 || m.categoryFilterSummary() != "all" {
+		t.Fatalf("expected 'a' on empty to check all categories, got %v", m.categories)
+	}
+
+	// 'enter' returns to modeList.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(browseModel)
+	if m.mode != modeList {
+		t.Fatalf("mode after enter in filter menu = %v, want modeList", m.mode)
 	}
 }
 
@@ -136,17 +205,63 @@ func TestBrowseListViewFitsWindowWhenShrunk(t *testing.T) {
 	}
 }
 
+func TestBrowseFilterViewsFitWindowWhenShrunk(t *testing.T) {
+	var categories []question.ProblemSetCategory
+	for i := 0; i < 20; i++ {
+		categories = append(categories, question.ProblemSetCategory{
+			Name:     "Category With A Reasonably Long Name",
+			Problems: []question.ProblemSetProblem{{ID: i + 1, Slug: "p"}},
+		})
+	}
+	sizes := [][2]int{{80, 30}, {60, 24}, {40, 20}, {30, 15}, {24, 12}}
+	modes := []browseMode{modeFilterStatus, modeFilterCategory}
+
+	for _, mode := range modes {
+		for _, size := range sizes {
+			width, height := size[0], size[1]
+			m := browseModel{
+				set:    question.ProblemSet{Name: "Many", Slug: "many", Categories: categories},
+				width:  width,
+				height: height,
+				mode:   mode,
+			}
+			m.moveFilter(15)
+
+			view := m.View()
+			if got := strings.Count(view, "\n") + 1; got > height {
+				t.Fatalf("mode %v size %v: filter view has %d lines, over %d:\n%s", mode, size, got, height, view)
+			}
+			for i, line := range strings.Split(view, "\n") {
+				if w := lipgloss.Width(line); w > width {
+					t.Fatalf("mode %v size %v: line %d width %d exceeds %d: %q", mode, size, i, w, width, line)
+				}
+			}
+		}
+	}
+}
+
 func TestBrowseUpdateKeepsModelConsistent(t *testing.T) {
 	m := testBrowseModel()
 	m.app = &App{}
 
-	// s cycles the status filter.
+	// s opens the status filter menu, space toggles todo, esc returns to list.
 	updated, _ := m.Update(runeKey('s'))
 	m = updated.(browseModel)
-	if m.status != "todo" {
-		t.Fatalf("status after 's' = %q, want todo", m.status)
+	if m.mode != modeFilterStatus {
+		t.Fatalf("mode after 's' = %v, want modeFilterStatus", m.mode)
 	}
-	m.status = ""
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	m = updated.(browseModel)
+	if !m.statuses[stateTodo] {
+		t.Fatalf("statuses after space = %v, want stateTodo enabled", m.statuses)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updated.(browseModel)
+	if m.mode != modeList {
+		t.Fatalf("mode after esc from filter = %v, want modeList", m.mode)
+	}
+	m.statuses = nil
+	m.applyFilter()
 
 	// enter opens the detail view, esc returns.
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
