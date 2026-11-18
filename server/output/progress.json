@@ -67,6 +67,10 @@
     "status": "accepted",
     "at": "2026-09-29T19:03:18.7438253-07:00"
   },
+  "implement-trie-prefix-tree": {
+    "status": "accepted",
+    "at": "2026-10-28T19:21:58.7942065-07:00"
+  },
   "invert-binary-tree": {
     "status": "accepted",
     "at": "2026-10-12T19:12:35.6420071-07:00"
@@ -74,6 +78,14 @@
   "koko-eating-bananas": {
     "status": "accepted",
     "at": "2026-10-10T17:04:17.586385-07:00"
+  },
+  "kth-smallest-element-in-a-bst": {
+    "status": "accepted",
+    "at": "2026-10-26T19:41:28.4828725-07:00"
+  },
+  "letter-combinations-of-a-phone-number": {
+    "status": "accepted",
+    "at": "2026-10-26T19:49:06.3010611-07:00"
   },
   "linked-list-cycle": {
     "status": "accepted",
@@ -106,6 +118,10 @@
   "min-stack": {
     "status": "accepted",
     "at": "2026-10-09T13:24:40.7048646-07:00"
+  },
+  "n-queens": {
+    "status": "accepted",
+    "at": "2026-10-26T19:49:28.9012452-07:00"
   },
   "palindrome-partitioning": {
     "status": "accepted",
