@@ -20,6 +20,7 @@ type App struct {
 	Progress   *progress.Store
 	client     *http.Client
 	chatClient *http.Client
+	baseURL    string
 }
 
 func main() {
@@ -56,11 +57,11 @@ func main() {
 		return
 	}
 
-	app.Questions = app.getQuestions()
-
 	if err := app.ImportAuthentication(); err != nil {
 		app.fail("Unable to import existing authentication", err)
 	}
+
+	app.Questions = app.loadQuestions()
 
 	if *importSet != "" {
 		app.importSetAndReport(*importSet)

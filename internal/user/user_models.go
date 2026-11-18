@@ -17,6 +17,7 @@ type UserStatusModel struct {
 }
 
 type UserModel struct {
-	FullName string `json:"realName"`
-	Username string `json:"username"`
+	IsSignedIn bool   `json:"isSignedIn"`
+	FullName   string `json:"realName"`
+	Username   string `json:"username"`
 }

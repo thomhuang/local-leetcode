@@ -17,10 +17,34 @@ const (
 	GraphQlUrl = BaseUrl + "graphql/"
 )
 
-func (app *App) GetAllQuestions() ([]byte, error) {
-	body, err := app.do(http.MethodGet, BaseUrl+"api/problems/all/", nil, "")
+func (app *App) leetcodeBaseURL() string {
+	if app != nil && app.baseURL != "" {
+		return app.baseURL
+	}
+	return BaseUrl
+}
+
+func (app *App) graphqlURL() string {
+	return app.leetcodeBaseURL() + "graphql/"
+}
+
+func (app *App) SearchQuestions(keyword string) ([]byte, error) {
+	query := map[string]interface{}{
+		"operationName": "problemsetQuestionList",
+		"variables": map[string]interface{}{
+			"categorySlug": "",
+			"skip":         0,
+			"limit":        50,
+			"filters": map[string]interface{}{
+				"searchKeywords": keyword,
+			},
+		},
+		"query": `query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) { problemsetQuestionList: questionList(categorySlug: $categorySlug, limit: $limit, skip: $skip, filters: $filters) { total: totalNum questions: data { frontendQuestionId: questionFrontendId title titleSlug } } }`,
+	}
+	jsonQuery, _ := json.Marshal(query)
+	body, err := app.do(http.MethodPost, app.graphqlURL(), jsonQuery, app.leetcodeBaseURL()+"problemset/")
 	if err != nil {
-		return nil, fmt.Errorf("get all questions: %w", err)
+		return nil, fmt.Errorf("search questions %q: %w", keyword, err)
 	}
 	return body, nil
 }
@@ -38,7 +62,7 @@ func (app *App) GetQuestion(slug string) ([]byte, error) {
 		"query": `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId questionFrontendId title titleSlug content difficulty isPaidOnly likes dislikes exampleTestcases codeSnippets { lang langSlug code } topicTags { name slug } } }`,
 	}
 	jsonQuery, _ := json.Marshal(query)
-	body, err := app.do(http.MethodPost, GraphQlUrl, jsonQuery, "")
+	body, err := app.do(http.MethodPost, app.graphqlURL(), jsonQuery, app.leetcodeBaseURL()+"problems/"+slug+"/")
 	if err != nil {
 		return nil, fmt.Errorf("get question %q: %w", slug, err)
 	}
@@ -46,20 +70,29 @@ func (app *App) GetQuestion(slug string) ([]byte, error) {
 }
 
 func (app *App) InterpretSolution(questionId int, typedCode string) ([]byte, error) {
-	ques, err := app.fetchQuestion(app.Questions[questionId].QuestionTitleSlug)
+	meta, err := app.resolveQuestion(questionId)
+	if err != nil {
+		return nil, err
+	}
+	ques, err := app.fetchQuestion(meta.QuestionTitleSlug)
 	if err != nil {
 		return nil, err
 	}
 
+	qID := ques.QuestionId
+	if qID == "" && meta.QuestionId != 0 {
+		qID = strconv.Itoa(meta.QuestionId)
+	}
 	requestBody := solution.InterpretSolutionRequest{
 		DataInput:  ques.ExampleTestCases,
 		Language:   "golang",
-		QuestionId: strconv.Itoa(app.Questions[questionId].QuestionId),
+		QuestionId: qID,
 		TypedCode:  typedCode,
 	}
 	jsonRequest, _ := json.Marshal(requestBody)
-	requestUrl := BaseUrl + "problems/" + ques.TitleSlug + "/interpret_solution/"
-	body, err := app.do(http.MethodPost, requestUrl, jsonRequest, BaseUrl+"problems/"+ques.TitleSlug)
+	base := app.leetcodeBaseURL()
+	requestUrl := base + "problems/" + ques.TitleSlug + "/interpret_solution/"
+	body, err := app.do(http.MethodPost, requestUrl, jsonRequest, base+"problems/"+ques.TitleSlug)
 	if err != nil {
 		return nil, fmt.Errorf("interpret solution: %w", err)
 	}
@@ -67,19 +100,28 @@ func (app *App) InterpretSolution(questionId int, typedCode string) ([]byte, err
 }
 
 func (app *App) SubmitSolution(questionId int, typedCode string) ([]byte, error) {
-	ques, err := app.fetchQuestion(app.Questions[questionId].QuestionTitleSlug)
+	meta, err := app.resolveQuestion(questionId)
+	if err != nil {
+		return nil, err
+	}
+	ques, err := app.fetchQuestion(meta.QuestionTitleSlug)
 	if err != nil {
 		return nil, err
 	}
 
+	qID := ques.QuestionId
+	if qID == "" && meta.QuestionId != 0 {
+		qID = strconv.Itoa(meta.QuestionId)
+	}
 	requestBody := solution.SubmitSolutionRequest{
 		Language:   "golang",
-		QuestionId: strconv.Itoa(app.Questions[questionId].QuestionId),
+		QuestionId: qID,
 		TypedCode:  typedCode,
 	}
 	jsonRequest, _ := json.Marshal(requestBody)
-	requestUrl := BaseUrl + "problems/" + ques.TitleSlug + "/submit/"
-	body, err := app.do(http.MethodPost, requestUrl, jsonRequest, BaseUrl+"problems/"+ques.TitleSlug)
+	base := app.leetcodeBaseURL()
+	requestUrl := base + "problems/" + ques.TitleSlug + "/submit/"
+	body, err := app.do(http.MethodPost, requestUrl, jsonRequest, base+"problems/"+ques.TitleSlug)
 	if err != nil {
 		return nil, fmt.Errorf("submit solution: %w", err)
 	}
@@ -91,8 +133,9 @@ func (app *App) CheckSolution(interpretId, titleSlug string) ([]byte, error) {
 		return nil, fmt.Errorf("check solution: interpretId must not be empty")
 	}
 
-	requestUrl := BaseUrl + "submissions/detail/" + interpretId + "/check/"
-	body, err := app.do(http.MethodGet, requestUrl, nil, BaseUrl+"problems/"+titleSlug)
+	base := app.leetcodeBaseURL()
+	requestUrl := base + "submissions/detail/" + interpretId + "/check/"
+	body, err := app.do(http.MethodGet, requestUrl, nil, base+"problems/"+titleSlug)
 	if err != nil {
 		return nil, fmt.Errorf("check solution: %w", err)
 	}
@@ -107,10 +150,10 @@ func (app *App) GetUser() ([]byte, error) {
 	query := map[string]interface{}{
 		"operationName": "globalData",
 		"variables":     map[string]interface{}{},
-		"query":         `query globalData {  userStatus { realName username } }`,
+		"query":         `query globalData { userStatus { isSignedIn realName username } }`,
 	}
 	jsonQuery, _ := json.Marshal(query)
-	body, err := app.do(http.MethodPost, GraphQlUrl, jsonQuery, "")
+	body, err := app.do(http.MethodPost, app.graphqlURL(), jsonQuery, app.leetcodeBaseURL())
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
@@ -132,14 +175,17 @@ func (app *App) do(method, url string, payload []byte, referer string) ([]byte, 
 		return nil, err
 	}
 
-	request.Header.Set("Content-Type", "application/json; charset=utf-8")
+	if payload != nil {
+		request.Header.Set("Content-Type", "application/json; charset=utf-8")
+	}
 	if len(app.UserAuth.AuthCookies) > 0 {
 		request.Header.Set("Cookie", app.UserAuth.AuthCookies)
 		request.Header.Set("X-Csrftoken", app.UserAuth.CsrfToken)
 	}
-	if len(referer) > 0 {
-		request.Header.Set("Referer", referer)
+	if len(referer) == 0 {
+		referer = app.leetcodeBaseURL()
 	}
+	request.Header.Set("Referer", referer)
 
 	app.log().Debug("http.request", "sending request",
 		"method", method,

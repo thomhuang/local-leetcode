@@ -14,6 +14,21 @@ type QuestionMetadata struct {
 	FrontEndQuestionId int    `json:"frontend_question_id"`
 }
 
+type ProblemsetQuestionListResponse struct {
+	Data struct {
+		ProblemsetQuestionList struct {
+			Total     int                      `json:"total"`
+			Questions []ProblemsetQuestionNode `json:"questions"`
+		} `json:"problemsetQuestionList"`
+	} `json:"data"`
+}
+
+type ProblemsetQuestionNode struct {
+	FrontEndQuestionId string `json:"frontendQuestionId"`
+	Title              string `json:"title"`
+	TitleSlug          string `json:"titleSlug"`
+}
+
 type QuestionResponse struct {
 	Data QuestionData `json:"data"`
 }

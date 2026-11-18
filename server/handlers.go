@@ -31,7 +31,18 @@ func (app *App) fetchQuestion(slug string) (question.Question, error) {
 }
 
 func (app *App) fetchUser() (user.UserStatusResponse, error) {
-	return decode[user.UserStatusResponse](app.GetUser())
+	resp, err := decode[user.UserStatusResponse](app.GetUser())
+	if err != nil {
+		return resp, err
+	}
+	if !resp.Data.UserStatus.IsSignedIn && resp.Data.UserStatus.Username == "" {
+		return resp, fmt.Errorf("session is not signed in")
+	}
+	return resp, nil
+}
+
+func (app *App) fetchProblemsetSearch(keyword string) (question.ProblemsetQuestionListResponse, error) {
+	return decode[question.ProblemsetQuestionListResponse](app.SearchQuestions(keyword))
 }
 
 func (app *App) fetchInterpretation(questionId int, typedCode string) (solution.InterpretSolutionResponse, error) {

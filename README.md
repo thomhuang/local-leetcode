@@ -32,9 +32,11 @@ return you to the prompt when you leave them.
 
 Commands are case-insensitive, and `help` prints the same list.
 
-`auth` needs the `Cookie` header from an authenticated request to
-`https://leetcode.com/graphql`: paste the line containing `LEETCODE_SESSION` and
-`csrftoken`. It stores them in `server/output/auth/`, which git ignores.
+`auth` accepts either the full `Cookie` header from an authenticated request to
+`https://leetcode.com/graphql` (containing `LEETCODE_SESSION` and `csrftoken`)
+or your `LEETCODE_SESSION` and `csrftoken` values pasted one at a time from
+DevTools → Application → Cookies. It stores them in `server/output/auth/`, which
+git ignores.
 
 ## Problem sets
 
@@ -192,7 +194,7 @@ and final reply. The API key is never logged.
 | `server/output/ProblemSets/` | Named problem sets, for example `neetcode-150.json`. Tracked in git. |
 | `server/output/progress.json` | Accepted problems by slug. Tracked in git. |
 | `server/output/assistant/` | Assistant config and system prompt. Tracked in git. |
-| `server/output/all_problems.json` | Cached problem list. Refreshed every 5 days. Ignored by git. |
+| `server/output/all_problems.json` | Cached problem list (augmented via GraphQL as needed). Ignored by git. |
 | `server/output/local_leetcode_logs.txt` | Log for the last run. Ignored by git. |
 
 ## Develop

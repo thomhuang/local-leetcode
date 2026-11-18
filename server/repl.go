@@ -213,15 +213,26 @@ func (app *App) replImport(args []string, out io.Writer) {
 }
 
 func (app *App) replAuth(in *bufio.Reader, out io.Writer) {
-	fmt.Fprint(out, "Paste your authenticated LeetCode cookies: ")
+	fmt.Fprint(out, "Paste your authenticated LeetCode cookies (or LEETCODE_SESSION value): ")
 	line, _ := in.ReadString('\n')
-	session, csrfToken, ok := parseCookies(strings.TrimSpace(line))
+	cookieHeader, _, csrfToken, ok := normalizeCookieHeader(line)
+	if !ok {
+		if session := parseSingleCookieValue(line, "LEETCODE_SESSION"); session != "" {
+			fmt.Fprint(out, "Paste your csrftoken value: ")
+			csrfLine, _ := in.ReadString('\n')
+			csrfToken = parseSingleCookieValue(csrfLine, "csrftoken")
+			if csrfToken != "" {
+				cookieHeader = "LEETCODE_SESSION=" + session + "; csrftoken=" + csrfToken
+				ok = true
+			}
+		}
+	}
 	if !ok {
 		fmt.Fprintln(out, "Cookies must contain LEETCODE_SESSION and csrftoken.")
 		return
 	}
 
-	user, err := app.Authenticate(session, csrfToken)
+	user, err := app.AuthenticateWithHeader(cookieHeader, csrfToken)
 	if err != nil {
 		fmt.Fprintln(out, "Authentication failed:", err)
 		return
@@ -264,9 +275,9 @@ func (app *App) replAsk(args []string, out io.Writer) {
 		fmt.Fprintf(out, "Set %s to use the assistant.\n", deepseekAPIKeyEnv)
 		return
 	}
-	meta, ok := app.Questions[id]
-	if !ok {
-		fmt.Fprintf(out, "Problem %d was not found in the problem list.\n", id)
+	meta, err := app.resolveQuestion(id)
+	if err != nil {
+		fmt.Fprintln(out, err)
 		return
 	}
 

@@ -13,10 +13,10 @@ import (
 // loadUserCode reads a problem's solution file and prepares it for submission
 // by stripping the local package clause.
 func (app *App) loadUserCode(id int) (string, string, error) {
-	meta, ok := app.Questions[id]
-	if !ok {
-		app.log().Error("code.load", "problem not in list", "problem", id)
-		return "", "", fmt.Errorf("problem %d is not in the problem list", id)
+	meta, err := app.resolveQuestion(id)
+	if err != nil {
+		app.log().Error("code.load", "problem not in list", "problem", id, "error", err.Error())
+		return "", "", err
 	}
 
 	titleSlug := meta.QuestionTitleSlug
@@ -149,10 +149,10 @@ func (app *App) ResetProblem(problem question.ProblemSetProblem) (string, error)
 
 // AddQuestion fetches a single problem and saves its statement and starter file.
 func (app *App) AddQuestion(id int) (string, error) {
-	meta, ok := app.Questions[id]
-	if !ok {
-		app.log().Warn("question.add", "problem not in list", "problem", id)
-		return "", fmt.Errorf("problem %d was not found in the problem list", id)
+	meta, err := app.resolveQuestion(id)
+	if err != nil {
+		app.log().Warn("question.add", "problem not in list", "problem", id, "error", err.Error())
+		return "", err
 	}
 
 	app.log().Info("question.add", "fetching problem", "problem", id, "slug", meta.QuestionTitleSlug)
@@ -171,8 +171,12 @@ func (app *App) AddQuestion(id int) (string, error) {
 
 // Authenticate saves the cookies and verifies them against LeetCode.
 func (app *App) Authenticate(session, csrfToken string) (user.UserStatusResponse, error) {
+	return app.AuthenticateWithHeader("LEETCODE_SESSION="+session+"; csrftoken="+csrfToken, csrfToken)
+}
+
+func (app *App) AuthenticateWithHeader(cookieHeader, csrfToken string) (user.UserStatusResponse, error) {
 	app.log().Info("auth.save", "saving session cookies")
-	if err := app.SaveAuthentication(session, csrfToken); err != nil {
+	if err := app.SaveCookieHeader(cookieHeader, csrfToken); err != nil {
 		app.log().Error("auth.save", "save failed", "error", err.Error())
 		return user.UserStatusResponse{}, fmt.Errorf("save authentication cookies: %w", err)
 	}

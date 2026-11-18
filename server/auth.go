@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"os"
 	"time"
+
+	"github.com/thomhuang/local-leetcode/internal/user"
 )
 
 func (app *App) ImportAuthentication() error {
@@ -27,29 +29,34 @@ func (app *App) ImportAuthentication() error {
 		return fmt.Errorf("failed to parse auth file: %w", err)
 	}
 
-	// LeetCode sessions last about 7 days. Remind the user before the session ends.
-	staleBefore := time.Now().AddDate(0, 0, -authFreshnessDays)
-	if len(app.UserAuth.AuthCookies) == 0 || staleBefore.After(app.UserAuth.LastUpdated) {
-		app.log().Info("auth.load", "saved session is stale", "last_updated", app.UserAuth.LastUpdated.Format(time.RFC3339))
+	if len(app.UserAuth.AuthCookies) == 0 {
+		app.log().Info("auth.load", "saved session is empty")
 		fmt.Println("Reminder to authenticate!")
 		return nil
 	}
 
-	user, err := app.fetchUser()
+	status, err := app.fetchUser()
 	if err != nil {
-		app.log().Error("auth.load", "saved session was rejected", "error", err.Error())
-		fmt.Println("Saved session was rejected. Reminder to authenticate!")
-		return err
+		app.log().Warn("auth.load", "saved session expired or was rejected",
+			"last_updated", app.UserAuth.LastUpdated.Format(time.RFC3339),
+			"error", err.Error())
+		app.UserAuth = user.UserAuthInfo{}
+		fmt.Println("Saved session expired or was rejected. Reminder to authenticate!")
+		return nil
 	}
-	app.log().Info("auth.load", "restored session", "username", user.Data.UserStatus.Username)
-	fmt.Printf("\nWelcome back, %s!\n\n", user.Data.UserStatus.Username)
+	app.log().Info("auth.load", "restored session", "username", status.Data.UserStatus.Username)
+	fmt.Printf("\nWelcome back, %s!\n\n", status.Data.UserStatus.Username)
 
 	return nil
 }
 
 func (app *App) SaveAuthentication(session, csrfToken string) error {
+	return app.SaveCookieHeader("LEETCODE_SESSION="+session+"; csrftoken="+csrfToken, csrfToken)
+}
+
+func (app *App) SaveCookieHeader(cookieHeader, csrfToken string) error {
 	app.log().Debug("auth.save", "writing authentication", "path", authFile)
-	app.UserAuth.AuthCookies = "LEETCODE_SESSION=" + session + "; csrftoken=" + csrfToken
+	app.UserAuth.AuthCookies = cookieHeader
 	app.UserAuth.CsrfToken = csrfToken
 	app.UserAuth.LastUpdated = time.Now()
 

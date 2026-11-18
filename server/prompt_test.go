@@ -73,6 +73,13 @@ func TestParseCookies(t *testing.T) {
 			wantCsrf:    "t",
 			wantOk:      true,
 		},
+		{
+			name:        "leading Cookie header prefix and quotes",
+			raw:         `Cookie: "LEETCODE_SESSION=sess789; csrftoken=csrf999; cf_clearance=clear1"`,
+			wantSession: "sess789",
+			wantCsrf:    "csrf999",
+			wantOk:      true,
+		},
 		{name: "missing session", raw: "csrftoken=t", wantOk: false},
 		{name: "garbage", raw: "not a cookie", wantOk: false},
 	}
@@ -87,5 +94,31 @@ func TestParseCookies(t *testing.T) {
 				t.Fatalf("got (%q, %q), want (%q, %q)", session, csrf, test.wantSession, test.wantCsrf)
 			}
 		})
+	}
+}
+
+func TestNormalizeCookieHeaderPreservesExtraCookies(t *testing.T) {
+	header, session, csrf, ok := normalizeCookieHeader("cookie: cf_clearance=abc; LEETCODE_SESSION=s1; csrftoken=c1\r\n")
+	if !ok || session != "s1" || csrf != "c1" {
+		t.Fatalf("normalizeCookieHeader() = (%q, %q, %q, %v)", header, session, csrf, ok)
+	}
+	want := "cf_clearance=abc; LEETCODE_SESSION=s1; csrftoken=c1"
+	if header != want {
+		t.Fatalf("header = %q, want %q", header, want)
+	}
+}
+
+func TestParseSingleCookieValue(t *testing.T) {
+	if got := parseSingleCookieValue("raw_token_value", "LEETCODE_SESSION"); got != "raw_token_value" {
+		t.Fatalf("bare value = %q, want raw_token_value", got)
+	}
+	if got := parseSingleCookieValue("csrftoken=tok123;", "csrftoken"); got != "tok123" {
+		t.Fatalf("named value = %q, want tok123", got)
+	}
+	if got := parseSingleCookieValue("other=tok123", "csrftoken"); got != "" {
+		t.Fatalf("wrong name = %q, want empty", got)
+	}
+	if got := parseSingleCookieValue("not a cookie", "LEETCODE_SESSION"); got != "" {
+		t.Fatalf("spaces = %q, want empty", got)
 	}
 }

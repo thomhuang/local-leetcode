@@ -19,9 +19,6 @@ const (
 	dirPerm  = 0o755
 	filePerm = 0o644
 
-	authFreshnessDays  = 5
-	cacheFreshnessDays = 5
-
 	httpTimeout  = 30 * time.Second
 	pollInterval = time.Second
 	pollTimeout  = 60 * time.Second
