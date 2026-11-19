@@ -3,6 +3,10 @@
     "status": "accepted",
     "at": "2026-09-30T19:46:59.2536482-07:00"
   },
+  "add-two-numbers": {
+    "status": "accepted",
+    "at": "2026-11-18T11:07:57.7557436-08:00"
+  },
   "balanced-binary-tree": {
     "status": "accepted",
     "at": "2026-10-14T11:50:58.4818356-07:00"
@@ -79,6 +83,10 @@
     "status": "accepted",
     "at": "2026-10-10T17:04:17.586385-07:00"
   },
+  "kth-largest-element-in-a-stream": {
+    "status": "accepted",
+    "at": "2026-11-19T11:15:44.607136-08:00"
+  },
   "kth-smallest-element-in-a-bst": {
     "status": "accepted",
     "at": "2026-10-26T19:41:28.4828725-07:00"
@@ -102,6 +110,10 @@
   "lowest-common-ancestor-of-a-binary-search-tree": {
     "status": "accepted",
     "at": "2026-10-14T14:57:32.5417267-07:00"
+  },
+  "lru-cache": {
+    "status": "accepted",
+    "at": "2026-11-19T10:48:57.5848685-08:00"
   },
   "maximum-depth-of-binary-tree": {
     "status": "accepted",
