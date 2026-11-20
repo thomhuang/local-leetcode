@@ -79,6 +79,10 @@
     "status": "accepted",
     "at": "2026-10-12T19:12:35.6420071-07:00"
   },
+  "k-closest-points-to-origin": {
+    "status": "accepted",
+    "at": "2026-11-19T15:11:03.6996122-08:00"
+  },
   "koko-eating-bananas": {
     "status": "accepted",
     "at": "2026-10-10T17:04:17.586385-07:00"
@@ -87,9 +91,17 @@
     "status": "accepted",
     "at": "2026-11-19T11:15:44.607136-08:00"
   },
+  "kth-largest-element-in-an-array": {
+    "status": "accepted",
+    "at": "2026-11-19T15:35:41.4334725-08:00"
+  },
   "kth-smallest-element-in-a-bst": {
     "status": "accepted",
     "at": "2026-10-26T19:41:28.4828725-07:00"
+  },
+  "last-stone-weight": {
+    "status": "accepted",
+    "at": "2026-11-19T14:35:01.1470478-08:00"
   },
   "letter-combinations-of-a-phone-number": {
     "status": "accepted",
@@ -182,6 +194,10 @@
   "subtree-of-another-tree": {
     "status": "accepted",
     "at": "2026-10-14T13:43:59.1746254-07:00"
+  },
+  "task-scheduler": {
+    "status": "accepted",
+    "at": "2026-11-20T13:55:59.8466338-08:00"
   },
   "time-based-key-value-store": {
     "status": "accepted",
