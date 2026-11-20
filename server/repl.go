@@ -78,6 +78,8 @@ func (app *App) handleREPLCommand(line string, in *bufio.Reader, out io.Writer) 
 		app.replTest(args, out)
 	case "submit", "s":
 		app.replSubmit(args, out)
+	case "variant", "variants", "v":
+		app.replVariant(args, out)
 	case "ask", "chat":
 		app.replAsk(args, out)
 	case "debug":
@@ -95,8 +97,12 @@ func printREPLHelp(out io.Writer) {
   add <number>                     fetch a problem and write its files
   import <set>                     import every missing problem in a set
   auth                             paste LeetCode cookies to sign in
-  test <number>                    run the example test cases
-  submit <number>                  submit a solution
+  test <number> [variant]          run the example test cases
+  submit <number> [variant]        submit a solution
+  variant <number>                 list a problem's implementations
+  variant <number> new <name>      create a new implementation from the starter
+  variant <number> select <name>   set the active implementation (primary resets)
+  variant <number> delete <name>   remove an implementation
   ask <number>                     open the assistant for a problem
   debug [level|clear|verbose on|off]   show or manage the session log
   help                             show this help
@@ -241,11 +247,12 @@ func (app *App) replAuth(in *bufio.Reader, out io.Writer) {
 }
 
 func (app *App) replTest(args []string, out io.Writer) {
-	id, ok := replProblemArg(args, out, "test <number>")
+	id, ok := replProblemArg(args, out, "test <number> [variant]")
 	if !ok {
 		return
 	}
-	text, err := app.TestProblem(id)
+	variant := variantArg(args)
+	text, err := app.TestProblem(id, variant)
 	if err != nil {
 		fmt.Fprintln(out, "test failed:", err)
 		return
@@ -254,16 +261,102 @@ func (app *App) replTest(args []string, out io.Writer) {
 }
 
 func (app *App) replSubmit(args []string, out io.Writer) {
-	id, ok := replProblemArg(args, out, "submit <number>")
+	id, ok := replProblemArg(args, out, "submit <number> [variant]")
 	if !ok {
 		return
 	}
-	text, err := app.SubmitProblem(id)
+	variant := variantArg(args)
+	text, err := app.SubmitProblem(id, variant)
 	if err != nil {
 		fmt.Fprintln(out, "submit failed:", err)
 		return
 	}
 	fmt.Fprintln(out, text)
+}
+
+// variantArg returns the optional second argument to test/submit, which names
+// a specific implementation to run instead of the active one.
+func variantArg(args []string) string {
+	if len(args) > 1 {
+		return args[1]
+	}
+	return ""
+}
+
+// replVariant lists, creates, selects, or deletes implementations for a problem.
+func (app *App) replVariant(args []string, out io.Writer) {
+	id, ok := replProblemArg(args, out, "variant <number> [new|select|delete <name>]")
+	if !ok {
+		return
+	}
+
+	sub, name := "", ""
+	if len(args) > 1 {
+		sub = strings.ToLower(args[1])
+	}
+	if len(args) > 2 {
+		name = args[2]
+	}
+
+	switch sub {
+	case "", "list", "ls":
+		variants, err := app.listVariants(id)
+		if err != nil {
+			fmt.Fprintln(out, "variant failed:", err)
+			return
+		}
+		app.printVariants(out, id, variants)
+	case "new", "add":
+		if name == "" {
+			fmt.Fprintln(out, "Usage: variant <number> new <name>")
+			return
+		}
+		message, err := app.createVariant(id, name)
+		if err != nil {
+			fmt.Fprintln(out, "variant new failed:", err)
+			return
+		}
+		fmt.Fprintln(out, message)
+	case "select", "use", "set":
+		if name == "" {
+			fmt.Fprintln(out, "Usage: variant <number> select <name|primary>")
+			return
+		}
+		message, err := app.selectVariant(id, name)
+		if err != nil {
+			fmt.Fprintln(out, "variant select failed:", err)
+			return
+		}
+		fmt.Fprintln(out, message)
+	case "delete", "rm", "remove":
+		if name == "" {
+			fmt.Fprintln(out, "Usage: variant <number> delete <name>")
+			return
+		}
+		message, err := app.deleteVariant(id, name)
+		if err != nil {
+			fmt.Fprintln(out, "variant delete failed:", err)
+			return
+		}
+		fmt.Fprintln(out, message)
+	default:
+		fmt.Fprintf(out, "Unknown variant subcommand %q. Use: list, new <name>, select <name>, delete <name>.\n", sub)
+	}
+}
+
+// printVariants lists a problem's implementations, marking the active one.
+func (app *App) printVariants(out io.Writer, id int, variants []solutionVariant) {
+	if len(variants) == 0 {
+		fmt.Fprintf(out, "Problem %d has no implementations yet. Use 'add %d' or 'import' first.\n", id, id)
+		return
+	}
+	for _, v := range variants {
+		marker := " "
+		if v.Selected {
+			marker = "*"
+		}
+		fmt.Fprintf(out, " %s %s\n", marker, v.label())
+	}
 }
 
 func (app *App) replAsk(args []string, out io.Writer) {

@@ -111,12 +111,12 @@ func buildProblemContextIn(baseDir string, problem question.ProblemSetProblem, l
 		b.WriteString("\n")
 	}
 
-	if starter := starterFilePath(baseDir, problem); starter != "" {
-		if data, err := os.ReadFile(starter); err == nil && strings.TrimSpace(string(data)) != "" {
-			b.WriteString("\nThe user's current Go solution:\n```go\n")
-			b.WriteString(strings.TrimSpace(string(data)))
-			b.WriteString("\n```\n")
-		}
+	active := activeVariantName(baseDir, problem.ID, problem.Slug)
+	solution := solutionPath(baseDir, problem.ID, problem.Slug, active)
+	if data, err := os.ReadFile(solution); err == nil && strings.TrimSpace(string(data)) != "" {
+		b.WriteString("\nThe user's current Go solution:\n```go\n")
+		b.WriteString(strings.TrimSpace(string(data)))
+		b.WriteString("\n```\n")
 	}
 
 	if result := strings.TrimSpace(lastResult); result != "" {

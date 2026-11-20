@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/thomhuang/local-leetcode/internal/progress"
@@ -113,9 +114,16 @@ func problemStateIn(baseDir string, problem question.ProblemSetProblem, store *p
 	return stateWritten
 }
 
-// starterFilePath returns the non-test Go file in a problem directory.
+// starterFilePath returns the primary (non-variant) Go file in a problem
+// directory. Variant files carry a //go:build constraint and are skipped so
+// checklist state, reset, and open always operate on the canonical file.
 func starterFilePath(baseDir string, problem question.ProblemSetProblem) string {
 	dir := baseDir + "/" + problem.Slug
+	primary := dir + "/" + strconv.Itoa(problem.ID) + "-" + problem.Slug + ".go"
+	if fileExists(primary) {
+		return primary
+	}
+
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return ""
@@ -125,7 +133,21 @@ func starterFilePath(baseDir string, problem question.ProblemSetProblem) string 
 		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
 			continue
 		}
+		if isVariantFile(dir + "/" + name) {
+			continue
+		}
 		return dir + "/" + name
 	}
 	return ""
+}
+
+// isVariantFile reports whether a Go file begins with a //go:build constraint,
+// which marks it as a non-primary variant implementation.
+func isVariantFile(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	line, _, _ := strings.Cut(string(data), "\n")
+	return strings.HasPrefix(strings.TrimSpace(line), "//go:build ")
 }

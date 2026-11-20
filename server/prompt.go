@@ -8,8 +8,11 @@ import (
 
 // prepareSubmission strips the local package clause and the node types that
 // the judge already supplies from a solution file so it can be sent to the
-// LeetCode judge.
+// LeetCode judge. Variant files also carry a //go:build constraint, which is
+// removed first.
 func prepareSubmission(source, packageName string) string {
+	source = stripBuildTags(source)
+
 	packageLine, _, found := strings.Cut(source, "\n")
 	packageLine = strings.TrimSpace(strings.TrimPrefix(packageLine, "\uFEFF"))
 	if !found || packageLine != "package "+packageName {
@@ -18,6 +21,19 @@ func prepareSubmission(source, packageName string) string {
 
 	_, code, _ := strings.Cut(question.RemoveProvidedTypes(source), "\n")
 	return strings.TrimLeft(code, "\r\n")
+}
+
+// stripBuildTags removes leading //go:build constraint lines (and the blank
+// line that follows them) so a variant file can be sent to the judge, which
+// does not expect build constraints.
+func stripBuildTags(source string) string {
+	for {
+		line, rest, found := strings.Cut(source, "\n")
+		if !found || !strings.HasPrefix(strings.TrimSpace(line), "//go:build ") {
+			return source
+		}
+		source = strings.TrimLeft(rest, "\r\n")
+	}
 }
 
 // parseCookies pulls the session and CSRF token out of a raw Cookie header.

@@ -33,6 +33,8 @@ const (
 	modeChat
 	modeFilterStatus
 	modeFilterCategory
+	modeVariant
+	modeVariantName
 )
 
 var filterStates = []problemState{
@@ -83,6 +85,12 @@ type browseModel struct {
 
 	chat     chatModel
 	chatSlug string
+
+	variants      []solutionVariant
+	variantCursor int
+	variantOffset int
+	variantInput  string
+	confirmDelete bool
 }
 
 type testResultMsg struct {
@@ -106,6 +114,11 @@ type importResultMsg struct {
 }
 
 type resetResultMsg struct {
+	message string
+	err     error
+}
+
+type variantResultMsg struct {
 	message string
 	err     error
 }
@@ -208,6 +221,15 @@ func (m browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.message = msg.message
 		}
 		return m, nil
+	case variantResultMsg:
+		m.busy = false
+		m.openVariantPicker()
+		if msg.err != nil {
+			m.message = "Create variant failed: " + msg.err.Error()
+		} else {
+			m.message = msg.message
+		}
+		return m, nil
 	case tea.KeyMsg:
 		if m.mode == modeChat {
 			if msg.String() == chatResetKey {
@@ -245,6 +267,10 @@ func (m browseModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleDetailKey(msg)
 	case modeFilterStatus, modeFilterCategory:
 		return m.handleFilterKey(msg)
+	case modeVariant:
+		return m.handleVariantKey(msg)
+	case modeVariantName:
+		return m.handleVariantNameKey(msg)
 	default:
 		return m.handleListKey(msg)
 	}
@@ -334,6 +360,8 @@ func (m browseModel) handleDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "o":
 		m.openFile()
+	case "x":
+		m.openVariantPicker()
 	case "a":
 		if !m.busy {
 			m.openChat()
@@ -792,22 +820,24 @@ func (m *browseModel) nextTodo() {
 	}
 }
 
-// openFile launches the problem's solution file in the default application.
+// openFile launches the problem's active implementation in the default
+// application.
 func (m *browseModel) openFile() {
 	row := m.rows[m.detailIndex]
-	starter := starterFilePath(problemsDir, row.problem)
-	if starter == "" {
-		m.app.log().Warn("file.open", "no starter file", "slug", row.problem.Slug)
+	active := activeVariantName(problemsDir, row.problem.ID, row.problem.Slug)
+	path := solutionPath(problemsDir, row.problem.ID, row.problem.Slug, active)
+	if !fileExists(path) {
+		m.app.log().Warn("file.open", "no solution file", "slug", row.problem.Slug)
 		m.message = "No .go file yet - press i to import."
 		return
 	}
-	if err := openInDefaultApp(starter); err != nil {
-		m.app.log().Error("file.open", "open failed", "path", starter, "error", err.Error())
+	if err := openInDefaultApp(path); err != nil {
+		m.app.log().Error("file.open", "open failed", "path", path, "error", err.Error())
 		m.message = "Unable to open file: " + err.Error()
 		return
 	}
-	m.app.log().Debug("file.open", "opened file", "path", starter)
-	m.message = "Opened " + starter
+	m.app.log().Debug("file.open", "opened file", "path", path)
+	m.message = "Opened " + path
 }
 
 func (m *browseModel) toggleAccepted() {
@@ -988,7 +1018,7 @@ func renderMarkdown(markdown string, width int) (string, error) {
 func (m browseModel) testCmd() tea.Cmd {
 	id := m.rows[m.detailIndex].problem.ID
 	return func() tea.Msg {
-		text, err := m.app.TestProblem(id)
+		text, err := m.app.TestProblem(id, "")
 		return testResultMsg{text: text, err: err}
 	}
 }
@@ -996,7 +1026,7 @@ func (m browseModel) testCmd() tea.Cmd {
 func (m browseModel) submitCmd() tea.Cmd {
 	id := m.rows[m.detailIndex].problem.ID
 	return func() tea.Msg {
-		text, err := m.app.SubmitProblem(id)
+		text, err := m.app.SubmitProblem(id, "")
 		return submitResultMsg{text: text, err: err}
 	}
 }
@@ -1043,6 +1073,253 @@ func (m browseModel) resetCmd() tea.Cmd {
 	}
 }
 
+// openVariantPicker loads a problem's implementations and enters the picker,
+// placing the cursor on the active one.
+func (m *browseModel) openVariantPicker() {
+	row := m.rows[m.detailIndex]
+	m.variants = listSolutionVariants(problemsDir, row.problem.ID, row.problem.Slug)
+	m.variantCursor = 0
+	m.variantOffset = 0
+	for i, v := range m.variants {
+		if v.Selected {
+			m.variantCursor = i
+			break
+		}
+	}
+	m.confirmDelete = false
+	m.variantInput = ""
+	m.mode = modeVariant
+	m.message = ""
+	m.clampVariantCursor()
+}
+
+// handleVariantKey manages the implementation picker.
+func (m *browseModel) handleVariantKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.confirmDelete {
+		switch msg.String() {
+		case "y":
+			m.deleteSelectedVariant()
+		case "n", "esc", "q", "ctrl+c":
+			m.confirmDelete = false
+			m.message = ""
+		}
+		return m, nil
+	}
+
+	switch msg.String() {
+	case "esc", "q", "ctrl+c":
+		m.mode = modeDetail
+		m.message = ""
+	case "up", "k":
+		m.variantCursor--
+	case "down", "j":
+		m.variantCursor++
+	case "enter":
+		m.selectActiveVariant()
+	case "n":
+		m.variantInput = ""
+		m.mode = modeVariantName
+	case "d":
+		if m.variantCursor >= 0 && m.variantCursor < len(m.variants) && !m.variants[m.variantCursor].Primary {
+			m.confirmDelete = true
+			m.message = ""
+		}
+	case "o":
+		m.openVariantFile()
+	}
+	m.clampVariantCursor()
+	return m, nil
+}
+
+// handleVariantNameKey collects the name of a new implementation.
+func (m *browseModel) handleVariantNameKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEsc:
+		m.mode = modeVariant
+	case tea.KeyEnter:
+		name := strings.TrimSpace(m.variantInput)
+		if name != "" && !m.busy {
+			m.busy = true
+			m.variantInput = ""
+			return m, m.newVariantCmd(name)
+		}
+	case tea.KeyBackspace:
+		if runes := []rune(m.variantInput); len(runes) > 0 {
+			m.variantInput = string(runes[:len(runes)-1])
+		}
+	case tea.KeyRunes:
+		m.variantInput += string(msg.Runes)
+	case tea.KeySpace:
+		m.variantInput += " "
+	}
+	return m, nil
+}
+
+// selectActiveVariant sets the highlighted implementation as active and returns
+// to the detail view.
+func (m *browseModel) selectActiveVariant() {
+	if m.variantCursor < 0 || m.variantCursor >= len(m.variants) {
+		return
+	}
+	v := m.variants[m.variantCursor]
+	row := m.rows[m.detailIndex]
+	name := "primary"
+	if !v.Primary {
+		name = v.Name
+	}
+	if err := setActiveVariant(problemsDir, row.problem.ID, row.problem.Slug, name); err != nil {
+		m.message = "Unable to select: " + err.Error()
+		return
+	}
+	m.app.log().Info("variant.select", "active variant set", "problem", row.problem.ID, "variant", name)
+	m.message = "Active implementation: " + name
+	m.mode = modeDetail
+}
+
+// deleteSelectedVariant removes the highlighted variant (never the primary) and
+// refreshes the picker.
+func (m *browseModel) deleteSelectedVariant() {
+	if m.variantCursor < 0 || m.variantCursor >= len(m.variants) {
+		return
+	}
+	v := m.variants[m.variantCursor]
+	if v.Primary {
+		return
+	}
+	row := m.rows[m.detailIndex]
+	message, err := m.app.deleteVariant(row.problem.ID, v.Name)
+	if err != nil {
+		m.message = "Delete failed: " + err.Error()
+		return
+	}
+	m.app.log().Info("variant.delete", "variant deleted", "problem", row.problem.ID, "variant", v.Name)
+	m.openVariantPicker()
+	m.message = message
+}
+
+// openVariantFile opens the highlighted implementation in the default app.
+func (m *browseModel) openVariantFile() {
+	if m.variantCursor < 0 || m.variantCursor >= len(m.variants) {
+		return
+	}
+	path := m.variants[m.variantCursor].Path
+	if err := openInDefaultApp(path); err != nil {
+		m.message = "Unable to open file: " + err.Error()
+		return
+	}
+	m.message = "Opened " + path
+}
+
+// newVariantCmd creates a fresh implementation off the UI goroutine.
+func (m browseModel) newVariantCmd(name string) tea.Cmd {
+	id := m.rows[m.detailIndex].problem.ID
+	return func() tea.Msg {
+		message, err := m.app.createVariant(id, name)
+		return variantResultMsg{message: message, err: err}
+	}
+}
+
+func (m *browseModel) clampVariantCursor() {
+	if len(m.variants) == 0 {
+		m.variantCursor = 0
+		m.variantOffset = 0
+		return
+	}
+	if m.variantCursor < 0 {
+		m.variantCursor = 0
+	}
+	if m.variantCursor >= len(m.variants) {
+		m.variantCursor = len(m.variants) - 1
+	}
+	height := m.variantViewHeight()
+	if m.variantCursor < m.variantOffset {
+		m.variantOffset = m.variantCursor
+	}
+	if m.variantCursor >= m.variantOffset+height {
+		m.variantOffset = m.variantCursor - height + 1
+	}
+	maxOffset := len(m.variants) - height
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if m.variantOffset > maxOffset {
+		m.variantOffset = maxOffset
+	}
+	if m.variantOffset < 0 {
+		m.variantOffset = 0
+	}
+}
+
+func (m browseModel) variantViewHeight() int {
+	h := m.height - 8
+	if h < 3 {
+		h = 3
+	}
+	return h
+}
+
+func (m browseModel) variantView() string {
+	var b strings.Builder
+	width := termWidth(m.width)
+	row := m.rows[m.detailIndex]
+
+	b.WriteString(clipStyled(titleStyle.Render(fmt.Sprintf("%d. %s · implementations", row.problem.ID, row.problem.Title)), width))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render(strings.Repeat("─", width)))
+	b.WriteString("\n\n")
+
+	if len(m.variants) == 0 {
+		b.WriteString(clipStyled(dimStyle.Render("  No implementations yet. Press i to import, then x to add a variant."), width))
+		b.WriteString("\n")
+	} else {
+		height := m.variantViewHeight()
+		end := m.variantOffset + height
+		if end > len(m.variants) {
+			end = len(m.variants)
+		}
+		for i := m.variantOffset; i < end; i++ {
+			v := m.variants[i]
+			marker := "  "
+			if v.Selected {
+				marker = accentStyle.Render("* ")
+			}
+			line := marker + v.label()
+			if i == m.variantCursor {
+				line = cursorStyle.Render("> ") + line
+			} else {
+				line = "  " + line
+			}
+			b.WriteString(clipStyled(line, width))
+			b.WriteString("\n")
+		}
+	}
+
+	b.WriteString("\n")
+	if m.confirmDelete {
+		b.WriteString(dimStyle.Render("Delete this implementation? (y/n)"))
+		b.WriteString("\n")
+	} else {
+		b.WriteString(clipStyled(dimStyle.Render("↑/↓ move · enter select · n new · d delete · o open · esc back"), width))
+	}
+	if m.message != "" {
+		b.WriteString("\n" + clipStyled(dimStyle.Render(m.message), width))
+	}
+	return b.String()
+}
+
+func (m browseModel) variantNameView() string {
+	var b strings.Builder
+	width := termWidth(m.width)
+	b.WriteString(clipStyled(titleStyle.Render("New implementation name"), width))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render(strings.Repeat("─", width)))
+	b.WriteString("\n\n")
+	b.WriteString(accentStyle.Render("> " + m.variantInput + "█"))
+	b.WriteString("\n\n")
+	b.WriteString(clipStyled(dimStyle.Render("enter create · esc back"), width))
+	return b.String()
+}
+
 func (m browseModel) View() string {
 	switch m.mode {
 	case modeText:
@@ -1053,6 +1330,10 @@ func (m browseModel) View() string {
 		return m.chat.View()
 	case modeFilterStatus, modeFilterCategory:
 		return m.filterView()
+	case modeVariant:
+		return m.variantView()
+	case modeVariantName:
+		return m.variantNameView()
 	default:
 		return m.listView()
 	}
@@ -1220,8 +1501,14 @@ func (m browseModel) detailView() string {
 	b.WriteString(clipStyled(dimStyle.Render(fmt.Sprintf("%s · %s", row.problem.Difficulty, row.category)), width))
 	b.WriteString("\n\n")
 	b.WriteString(fmt.Sprintf("status: %s %s\n", coloredSymbol(row.state), row.state.Label()))
-	if starter := starterFilePath(problemsDir, row.problem); starter != "" {
-		b.WriteString("file:   " + starter + "\n")
+	active := activeVariantName(problemsDir, row.problem.ID, row.problem.Slug)
+	file := solutionPath(problemsDir, row.problem.ID, row.problem.Slug, active)
+	if fileExists(file) {
+		suffix := ""
+		if active != "" {
+			suffix = "  [variant: " + active + "]"
+		}
+		b.WriteString("file:   " + file + suffix + "\n")
 	} else {
 		b.WriteString("file:   (not imported)\n")
 	}
@@ -1231,7 +1518,7 @@ func (m browseModel) detailView() string {
 	if row.state == stateAccepted {
 		mark = "m clear accepted"
 	}
-	b.WriteString(clipStyled(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "o open file", "a assistant", "i import", "r reset", mark, "esc back"}, " · ")), width))
+	b.WriteString(clipStyled(dimStyle.Render(strings.Join([]string{"t test", "s submit", "v statement", "o open file", "x variants", "a assistant", "i import", "r reset", mark, "esc back"}, " · ")), width))
 
 	if m.confirmReset {
 		b.WriteString("\n\n" + dimStyle.Render("Reset implementation to starter? (y/n)"))

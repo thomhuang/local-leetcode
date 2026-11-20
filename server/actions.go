@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/thomhuang/local-leetcode/internal/question"
 	"github.com/thomhuang/local-leetcode/internal/user"
 )
 
-// loadUserCode reads a problem's solution file and prepares it for submission
-// by stripping the local package clause.
-func (app *App) loadUserCode(id int) (string, string, error) {
+// loadUserCode reads a problem's implementation and prepares it for submission
+// by stripping the local package clause. An empty variant selects the problem's
+// active implementation; a named variant selects that specific file.
+func (app *App) loadUserCode(id int, variant string) (string, string, error) {
 	meta, err := app.resolveQuestion(id)
 	if err != nil {
 		app.log().Error("code.load", "problem not in list", "problem", id, "error", err.Error())
@@ -20,25 +22,30 @@ func (app *App) loadUserCode(id int) (string, string, error) {
 	}
 
 	titleSlug := meta.QuestionTitleSlug
-	filePath := problemsDir + "/" + titleSlug + "/" + strconv.Itoa(id) + "-" + titleSlug + ".go"
+	name := strings.TrimSpace(variant)
+	if name == "" {
+		name = activeVariantName(problemsDir, id, titleSlug)
+	}
+	filePath := solutionPath(problemsDir, id, titleSlug, name)
 
 	fileStream, err := os.ReadFile(filePath)
 	if err != nil {
-		app.log().Error("code.load", "read solution failed", "problem", id, "path", filePath, "error", err.Error())
+		app.log().Error("code.load", "read solution failed", "problem", id, "path", filePath, "variant", name, "error", err.Error())
 		return "", "", fmt.Errorf("read %s: %w", filePath, err)
 	}
-	app.log().Debug("code.load", "read solution", "problem", id, "path", filePath, "bytes", len(fileStream))
+	app.log().Debug("code.load", "read solution", "problem", id, "path", filePath, "variant", name, "bytes", len(fileStream))
 
 	packageName := question.PackageName(titleSlug)
 	return prepareSubmission(string(fileStream), packageName), titleSlug, nil
 }
 
 // TestProblem runs a problem's example test cases and returns the formatted
-// result. It is safe to call outside the interactive prompt.
-func (app *App) TestProblem(id int) (string, error) {
-	app.log().Info("test.start", "running example tests", "problem", id)
+// result. An empty variant runs the problem's active implementation. It is safe
+// to call outside the interactive prompt.
+func (app *App) TestProblem(id int, variant string) (string, error) {
+	app.log().Info("test.start", "running example tests", "problem", id, "variant", variant)
 
-	userSubmission, titleSlug, err := app.loadUserCode(id)
+	userSubmission, titleSlug, err := app.loadUserCode(id, variant)
 	if err != nil {
 		return "", err
 	}
@@ -61,12 +68,13 @@ func (app *App) TestProblem(id int) (string, error) {
 	return OutputQuestionResults(result), nil
 }
 
-// SubmitProblem submits a problem and returns the formatted result. An
-// accepted submission is recorded in the progress store.
-func (app *App) SubmitProblem(id int) (string, error) {
-	app.log().Info("submit.start", "submitting solution", "problem", id)
+// SubmitProblem submits a problem and returns the formatted result. An accepted
+// submission is recorded in the progress store. An empty variant submits the
+// problem's active implementation.
+func (app *App) SubmitProblem(id int, variant string) (string, error) {
+	app.log().Info("submit.start", "submitting solution", "problem", id, "variant", variant)
 
-	userSubmission, titleSlug, err := app.loadUserCode(id)
+	userSubmission, titleSlug, err := app.loadUserCode(id, variant)
 	if err != nil {
 		return "", err
 	}
