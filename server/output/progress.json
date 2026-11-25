@@ -139,6 +139,10 @@
     "status": "accepted",
     "at": "2026-10-20T11:40:51.8445966-07:00"
   },
+  "merge-k-sorted-lists": {
+    "status": "accepted",
+    "at": "2026-11-25T10:59:59.8573401-08:00"
+  },
   "merge-two-sorted-lists": {
     "status": "accepted",
     "at": "2026-10-20T13:29:10.6117891-07:00"
